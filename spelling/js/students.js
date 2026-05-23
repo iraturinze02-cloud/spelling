@@ -1,5 +1,24 @@
 let editing=false;
 
+let competition = null;
+
+async function loadCompetition() {
+  try {
+    const res = await fetch("/.netlify/functions/getActiveCompetition");
+    const data = await res.json();
+
+    competition = data.competition || null;
+
+    if (competition) {
+      localStorage.setItem("competition_id", competition.id);
+    } else {
+      localStorage.removeItem("competition_id");
+    }
+  } catch (error) {
+    console.log("Competition error:", error);
+  }
+}
+
 async function loadStudents(){
 
 const competition_id = localStorage.getItem("competition_id");

@@ -2,12 +2,19 @@ let editing=false;
 
 async function loadStudents(){
 
+const competition_id = localStorage.getItem("competition_id");
+const stage_number = localStorage.getItem("active_stage");
+
+if(!competition_id || !stage_number){
+alert("No active competition or stage selected");
+return;
+}
 const res=
 await fetch(
 "/.netlify/functions/spellingGetStudents?competition_id=" +
-localStorage.getItem("competition_id") +
+competition_id +
 "&stage_number=" +
-localStorage.getItem("active_stage")
+stage_number
 );
 
 const data=

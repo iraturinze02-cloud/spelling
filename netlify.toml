@@ -1,0 +1,8 @@
+
+[build]
+functions = "functions"
+publish = "."    # "." means the root of your repo
+command = ""    # leave empty if no build command is needed
+
+[build.environment]
+  NODE_VERSION = "20"   # optional, if you use Node.js

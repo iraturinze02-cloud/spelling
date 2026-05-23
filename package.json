@@ -1,0 +1,16 @@
+{
+  "name": "fila-assistant",
+  "version": "1.0.0",
+  "description": "Fila Assistant Netlify Functions",
+  "type": "module",
+  "dependencies": {
+    "@sendgrid/mail": "^8.1.3",
+     "@neondatabase/serverless": "^1.0.0",
+    "bcryptjs": "^2.4.3",
+    
+    "pg": "^8.11.5",
+    "jsonwebtoken": "^9.0.0",
+    "resend": "^1.0.0",
+    "@supabase/supabase-js": "^2.8.0"
+  }
+}

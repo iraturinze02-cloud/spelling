@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Judge Home</title>
+
+<style>
+body{
+margin:0;
+font-family:Arial,sans-serif;
+background:#f3f4f6;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+.container{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:30px;
+width:80%;
+max-width:700px;
+}
+
+.card{
+background:white;
+padding:40px;
+border-radius:15px;
+box-shadow:0 4px 10px rgba(0,0,0,0.1);
+text-align:center;
+cursor:pointer;
+transition:0.3s;
+}
+
+.card:hover{
+transform:scale(1.05);
+}
+
+.card h2{
+margin-bottom:10px;
+color:#1e40af;
+}
+
+.card p{
+color:#6b7280;
+font-size:14px;
+}
+
+.live{
+border-left:6px solid #16a34a;
+}
+
+.leaderboard{
+border-left:6px solid #2563eb;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card live" onclick="goLive()">
+<h2>Live Competition</h2>
+<p>Start judging ongoing competition</p>
+</div>
+
+<div class="card leaderboard" onclick="goLeaderboard()">
+<h2>Leaderboard</h2>
+<p>View rankings and scores</p>
+</div>
+
+</div>
+
+<script>
+function goLive(){
+window.location.href="judge.html";
+}
+
+function goLeaderboard(){
+window.location.href="leaderboard.html";
+}
+</script>
+
+</body>
+</html>

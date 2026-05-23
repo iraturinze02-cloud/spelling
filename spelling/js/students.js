@@ -4,7 +4,10 @@ async function loadStudents(){
 
 const res=
 await fetch(
-"/.netlify/functions/spellingGetStudents"
+"/.netlify/functions/spellingGetStudents?competition_id=" +
+localStorage.getItem("competition_id") +
+"&stage_number=" +
+localStorage.getItem("active_stage")
 );
 
 const data=
@@ -103,7 +106,9 @@ let data={
 id:document.getElementById("id").value,
 full_name:document.getElementById("name").value,
 gender:document.getElementById("gender").value,
-class_name:document.getElementById("class").value
+class_name:document.getElementById("class").value,
+  competition_id: localStorage.getItem("competition_id"),
+stage_number: localStorage.getItem("active_stage")
 };
 
 let url=editing

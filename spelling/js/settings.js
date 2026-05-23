@@ -19,8 +19,6 @@ await loadStages();
 
 };
 
-
-
 /* ===============================
 LOAD ACTIVE COMPETITION
 =============================== */
@@ -41,6 +39,15 @@ competition=
 data.competition || null;
 
 
+/* ✅ ADD THIS: store globally + localStorage */
+if(competition){
+localStorage.setItem("competition_id", competition.id);
+}
+else{
+localStorage.removeItem("competition_id");
+}
+
+
 document.getElementById(
 "competitionName"
 ).innerText=
@@ -50,7 +57,6 @@ competition
 competition.competition_name
 :
 "No Active Competition";
-
 
 }
 catch(error){

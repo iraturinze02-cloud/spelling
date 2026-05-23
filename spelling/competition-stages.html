@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Competition Stages</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:#f3f4f6;
+}
+
+.header{
+background:#1e3a8a;
+color:white;
+padding:20px;
+text-align:center;
+font-size:24px;
+font-weight:bold;
+}
+
+.container{
+max-width:1000px;
+margin:auto;
+padding:20px;
+}
+
+.competition-box{
+background:white;
+padding:15px;
+border-radius:10px;
+margin-bottom:20px;
+font-size:20px;
+font-weight:bold;
+}
+
+.stage{
+background:white;
+padding:15px;
+margin-bottom:15px;
+border-radius:10px;
+box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+
+.stage-title{
+font-size:20px;
+font-weight:bold;
+color:#1e3a8a;
+}
+
+.info{
+margin-top:8px;
+font-size:14px;
+color:#444;
+line-height:1.6;
+}
+
+button{
+margin-top:10px;
+padding:10px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+background:#2563eb;
+color:white;
+font-weight:bold;
+}
+
+button:disabled{
+background:#9ca3af;
+cursor:not-allowed;
+}
+
+</style>
+
+</head>
+
+<body>
+  <div style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:15px 20px;
+background:#111827;
+color:white;
+">
+
+<button onclick="goHome()" style="
+background:#22c55e;
+padding:10px 15px;
+border:none;
+border-radius:8px;
+color:white;
+font-weight:bold;
+cursor:pointer;
+">
+🏠 Home
+</button>
+
+<div style="font-weight:bold;">
+Competition Stages
+</div>
+
+<button onclick="goBack()" style="
+background:#f59e0b;
+padding:10px 15px;
+border:none;
+border-radius:8px;
+color:white;
+font-weight:bold;
+cursor:pointer;
+">
+⬅ Back
+</button>
+
+  </div>
+
+<div class="header">
+Competition Stages
+</div>
+  <div class="stage">
+
+<h3>Create New Stage</h3>
+
+<input id="stageName" placeholder="Stage name" style="width:100%;padding:10px;margin:5px 0;">
+<input id="stageNumber" type="number" placeholder="Stage number" style="width:100%;padding:10px;margin:5px 0;">
+<input id="participants" type="number" placeholder="Participants" style="width:100%;padding:10px;margin:5px 0;">
+<input id="rounds" type="number" placeholder="Total rounds" style="width:100%;padding:10px;margin:5px 0;">
+<input id="wordsPerRound" type="number" placeholder="Words per round" style="width:100%;padding:10px;margin:5px 0;">
+<input id="topQualifiers" type="number" placeholder="Top qualifiers" style="width:100%;padding:10px;margin:5px 0;">
+<input id="judges" type="number" placeholder="Judge count" style="width:100%;padding:10px;margin:5px 0;">
+
+<button onclick="createStage()">
+CREATE STAGE
+</button>
+
+  </div>
+
+<div class="container">
+
+<div class="competition-box" id="competitionName">
+Loading competition...
+</div>
+
+<div id="stagesContainer"></div>
+
+</div>
+
+<script>
+
+let competition=null;
+let stages=[];
+
+/* GET ACTIVE COMPETITION */
+async function loadCompetition(){
+
+const res=
+await fetch("/.netlify/functions/getActiveCompetition");
+
+const data=
+await res.json();
+
+competition=data.competition;
+
+document.getElementById("competitionName").innerText=
+competition.competition_name;
+
+loadStages();
+
+}
+  async function createStage(){
+
+const body={
+competition_id:competition.id,
+stage_name:document.getElementById("stageName").value,
+stage_number:document.getElementById("stageNumber").value,
+participant_count:document.getElementById("participants").value,
+total_rounds:document.getElementById("rounds").value,
+words_per_round:document.getElementById("wordsPerRound").value,
+top_qualifiers:document.getElementById("topQualifiers").value,
+judge_count:document.getElementById("judges").value,
+status:"inactive"
+};
+
+const res=
+await fetch("/.netlify/functions/createStage",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify(body)
+});
+
+const data=await res.json();
+
+alert(data.message);
+
+loadStages();
+
+  }
+
+/* GET STAGES */
+async function loadStages(){
+
+const res=
+await fetch("/.netlify/functions/getStages?competition_id="+competition.id);
+
+const data=
+await res.json();
+
+stages=data.stages;
+
+renderStages();
+
+}
+
+/* RENDER UI */
+function renderStages(){
+
+const container=
+document.getElementById("stagesContainer");
+
+container.innerHTML="";
+
+stages.forEach(stage=>{
+
+const div=document.createElement("div");
+div.className="stage";
+
+div.innerHTML=`
+<div class="stage-title">
+Stage ${stage.stage_number} - ${stage.stage_name}
+</div>
+
+<div class="info">
+Participants: ${stage.participant_count}<br>
+Rounds: ${stage.total_rounds}<br>
+Words per round: ${stage.words_per_round}<br>
+Top qualifiers: ${stage.top_qualifiers}<br>
+Judges: ${stage.judge_count}<br>
+Status: ${stage.status}
+</div>
+
+<button onclick="openStage(${stage.id})">
+OPEN STAGE
+</button>
+`;
+
+container.appendChild(div);
+
+});
+
+}
+  function goHome(){
+window.location="teacher-home.html";
+}
+
+function goBack(){
+window.location="competitions.html";
+  }
+
+/* OPEN STAGE */
+function openStage(stageId){
+
+window.location=
+"teacher.html?stage_id="+stageId;
+
+}
+
+loadCompetition();
+
+</script>
+
+</body>
+  </html>

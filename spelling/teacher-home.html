@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width,initial-scale=1">
+
+<title>Teacher Dashboard</title>
+
+<style>
+
+*{
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
+
+body{
+margin:0;
+background:#f3f4f6;
+color:#111827;
+}
+
+/* HEADER */
+
+.header{
+
+background:linear-gradient(
+135deg,
+#1d4ed8,
+#2563eb
+);
+
+color:white;
+
+padding:20px;
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+flex-wrap:wrap;
+
+}
+
+.header-left h1{
+
+margin:0;
+font-size:30px;
+
+}
+
+.header-left p{
+
+margin:5px 0 0;
+opacity:.9;
+
+}
+
+.logout{
+
+background:#dc2626;
+border:none;
+color:white;
+
+padding:12px 18px;
+
+border-radius:10px;
+
+font-weight:bold;
+
+cursor:pointer;
+
+}
+
+/* CONTAINER */
+
+.container{
+
+padding:25px;
+max-width:1300px;
+margin:auto;
+
+}
+
+/* TOP INFO */
+
+.top-grid{
+
+display:grid;
+
+grid-template-columns:
+repeat(auto-fit,minmax(250px,1fr));
+
+gap:20px;
+
+margin-bottom:30px;
+
+}
+
+.info-card{
+
+background:white;
+
+padding:25px;
+
+border-radius:18px;
+
+box-shadow:
+0 4px 15px rgba(0,0,0,.08);
+
+}
+
+.info-title{
+
+font-size:16px;
+color:#6b7280;
+
+}
+
+.info-value{
+
+font-size:34px;
+font-weight:bold;
+
+margin-top:10px;
+
+}
+
+/* MAIN GRID */
+
+.grid{
+
+display:grid;
+
+grid-template-columns:
+repeat(auto-fit,minmax(260px,1fr));
+
+gap:20px;
+
+}
+
+/* CARDS */
+
+.card{
+
+background:white;
+
+padding:25px;
+
+border-radius:18px;
+
+text-align:center;
+
+box-shadow:
+0 4px 15px rgba(0,0,0,.08);
+
+transition:.3s;
+
+}
+
+.card:hover{
+
+transform:translateY(-4px);
+
+}
+
+.icon{
+
+font-size:55px;
+
+margin-bottom:15px;
+
+}
+
+.card h2{
+
+margin:10px 0;
+font-size:24px;
+
+}
+
+.card p{
+
+color:#6b7280;
+font-size:15px;
+line-height:1.5;
+
+min-height:50px;
+
+}
+
+button{
+
+border:none;
+
+padding:14px 20px;
+
+border-radius:10px;
+
+cursor:pointer;
+
+font-size:16px;
+font-weight:bold;
+
+color:white;
+
+margin-top:15px;
+
+transition:.3s;
+
+}
+
+button:hover{
+
+opacity:.92;
+
+transform:scale(1.03);
+
+}
+
+/* COLORS */
+
+.students{
+background:#16a34a;
+}
+
+.groups{
+background:#9333ea;
+}
+
+.draw{
+background:#7c3aed;
+}
+
+.competition{
+background:#2563eb;
+}
+
+.stages{
+background:#0f766e;
+}
+
+.judges{
+background:#db2777;
+}
+
+.leaderboard{
+background:#f59e0b;
+}
+
+.certificates{
+background:#dc2626;
+}
+
+.settings{
+background:#475569;
+}
+
+/* FOOTER */
+
+.footer{
+
+text-align:center;
+
+padding:30px;
+
+color:#6b7280;
+
+font-size:14px;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<!-- HEADER -->
+
+<div class="header">
+
+<div class="header-left">
+
+<h1>
+
+Spelling Competition System
+
+</h1>
+
+<p>
+
+Teacher Administration Dashboard
+
+</p>
+
+</div>
+
+<button
+class="logout"
+onclick="logout()">
+
+Logout
+
+</button>
+
+</div>
+
+
+<div class="container">
+
+<!-- TOP INFO -->
+
+<div class="top-grid">
+
+<div class="info-card">
+
+<div class="info-title">
+
+Current Competition
+
+</div>
+
+<div
+class="info-value"
+id="competitionName">
+
+No Active Competition
+
+</div>
+
+</div>
+
+
+<div class="info-card">
+
+<div class="info-title">
+
+Current Stage
+
+</div>
+
+<div
+class="info-value"
+id="currentStage">
+
+-
+
+</div>
+
+</div>
+
+
+<div class="info-card">
+
+<div class="info-title">
+
+Participants
+
+</div>
+
+<div
+class="info-value"
+id="participantCount">
+
+0
+
+</div>
+
+</div>
+
+
+<div class="info-card">
+
+<div class="info-title">
+
+Judges Connected
+
+</div>
+
+<div
+class="info-value"
+id="judgeCount">
+
+0
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- MAIN MENU -->
+
+<div class="grid">
+
+
+<!-- COMPETITIONS -->
+
+<div class="card">
+
+<div class="icon">
+
+🏆
+
+</div>
+
+<h2>
+
+Competitions
+
+</h2>
+
+<p>
+
+Create and manage spelling competitions.
+
+</p>
+
+<button
+class="competition"
+onclick="go('competitions.html')">
+
+Open
+
+</button>
+
+</div>
+
+
+<!-- STAGES -->
+
+<div class="card">
+
+<div class="icon">
+
+🎯
+
+</div>
+
+<h2>
+
+Competition Stages
+
+</h2>
+
+<p>
+
+Manage qualifiers, semifinals and finals.
+
+</p>
+
+<button
+class="stages"
+onclick="go('competition-stages.html')">
+
+Open
+
+</button>
+
+</div>
+
+
+<!-- PARTICIPANTS -->
+
+<div class="card">
+
+<div class="icon">
+
+👨‍🎓
+
+</div>
+
+<h2>
+
+Participants
+
+</h2>
+
+<p>
+
+Register and manage competition participants.
+
+</p>
+
+<button
+class="students"
+onclick="go('student-registration.html')">
+
+Open
+
+</button>
+
+</div>
+
+
+<!-- WORD GROUPS -->
+
+<div class="card">
+
+<div class="icon">
+
+📚
+
+</div>
+
+<h2>
+
+Word Groups
+
+</h2>
+
+<p>
+
+Create and organize spelling word groups.
+
+</p>
+
+<button
+class="groups"
+onclick="go('word-groups.html')">
+
+Open
+
+</button>
+
+</div>
+
+
+<!-- DRAW -->
+
+<div class="card">
+
+<div class="icon">
+
+🎲
+
+</div>
+
+<h2>
+
+Participants Draw
+
+</h2>
+
+<p>
+
+Randomly assign participants to groups.
+
+</p>
+
+<button
+class="draw"
+onclick="go('draw.html')">
+
+Open
+
+</button>
+
+</div>
+
+
+<!-- JUDGES -->
+
+<div class="card">
+
+<div class="icon">
+
+⚖️
+
+</div>
+
+<h2>
+
+Judges
+
+</h2>
+
+<p>
+
+Create and manage judges accounts.
+
+</p>
+
+<button
+class="judges"
+onclick="go('judges.html')">
+
+Open
+
+</button>
+
+</div>
+
+
+<!-- LIVE CONTROL -->
+
+<div class="card">
+
+<div class="icon">
+
+🎤
+
+</div>
+
+<h2>
+
+Live Competition
+
+</h2>
+
+<p>
+
+Control the live spelling competition.
+
+</p>
+
+<button
+class="competition"
+onclick="go('teacher.html')">
+
+Open
+
+</button>
+
+</div>
+
+
+<!-- LEADERBOARD -->
+
+<div class="card">
+
+<div class="icon">
+
+🥇
+
+</div>
+
+<h2>
+
+Leaderboard
+
+</h2>
+
+<p>
+
+View live scores and rankings.
+
+</p>
+
+<button
+class="leaderboard"
+onclick="go('leaderboard.html')">
+
+Open
+
+</button>
+
+</div>
+
+
+<!-- CERTIFICATES -->
+
+<div class="card">
+
+<div class="icon">
+
+📜
+
+</div>
+
+<h2>
+
+Certificates
+
+</h2>
+
+<p>
+
+Generate certificates for winners.
+
+</p>
+
+<button
+class="certificates"
+onclick="go('certificates.html')">
+
+Open
+
+</button>
+
+</div>
+
+
+<!-- SETTINGS -->
+
+<div class="card">
+
+<div class="icon">
+
+⚙️
+
+</div>
+
+<h2>
+
+System Settings
+
+</h2>
+
+<p>
+
+Configure competition system settings.
+
+</p>
+
+<button
+class="settings"
+onclick="go('settings.html')">
+
+Open
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+
+<div class="footer">
+
+Spelling Competition Management System
+
+</div>
+
+
+<script>
+
+function go(page){
+
+window.location = page;
+
+}
+
+function logout(){
+
+localStorage.removeItem("user");
+
+window.location = "login.html";
+
+}
+
+</script>
+
+</body>
+
+  </html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+<title>Word Groups</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f2f2f2;
+margin:0;
+}
+
+.header{
+background:#7c3aed;
+color:white;
+padding:15px;
+display:flex;
+justify-content:space-between;
+}
+
+.container{
+max-width:1000px;
+margin:auto;
+padding:20px;
+}
+
+button{
+padding:10px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+color:white;
+}
+
+.add{background:#22c55e;}
+
+.card{
+background:white;
+padding:15px;
+margin:10px 0;
+border-radius:10px;
+}
+
+input{
+width:100%;
+padding:8px;
+margin:5px 0;
+}
+
+.groupBox{
+background:#f9fafb;
+padding:10px;
+margin-top:10px;
+border-radius:8px;
+}
+
+.word{
+display:inline-block;
+background:#ddd;
+padding:5px 8px;
+margin:3px;
+border-radius:5px;
+}
+
+.save{
+background:#16a34a;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+
+<h2>Word Groups</h2>
+
+<button class="add"
+onclick="addGroupBox()">
+
++ Add Group
+
+</button>
+
+</div>
+
+
+<div class="container">
+
+<div id="groups"></div>
+
+</div>
+
+
+<script src="js/groups.js"></script>
+
+</body>
+
+</html>

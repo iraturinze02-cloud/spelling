@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport"
+content="width=device-width,initial-scale=1">
+
+<title>Students</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f2f2f2;
+margin:0;
+}
+
+.header{
+background:#16a34a;
+color:white;
+padding:15px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.container{
+max-width:1000px;
+margin:auto;
+padding:20px;
+}
+
+button{
+padding:10px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+color:white;
+}
+
+.add{
+background:#22c55e;
+}
+
+table{
+width:100%;
+background:white;
+border-collapse:collapse;
+border-radius:10px;
+overflow:hidden;
+}
+
+th,td{
+padding:12px;
+border-bottom:1px solid #ddd;
+}
+
+.edit{background:#3b82f6;}
+.delete{background:#ef4444;}
+
+.modal{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.5);
+}
+
+.modal-box{
+background:white;
+width:400px;
+margin:100px auto;
+padding:20px;
+border-radius:10px;
+}
+
+input,select{
+width:100%;
+padding:10px;
+margin:8px 0;
+}
+
+.save{background:#16a34a;}
+.close{background:gray;}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+
+<h2>Students</h2>
+
+<button class="add"
+onclick="openModal()">
+
++ Add Student
+
+</button>
+
+</div>
+
+
+<div class="container">
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Name</th>
+<th>Gender</th>
+<th>Class</th>
+<th>Actions</th>
+
+</tr>
+
+</thead>
+
+<tbody id="list">
+
+</tbody>
+
+</table>
+
+</div>
+
+
+
+<!-- MODAL -->
+
+<div class="modal" id="modal">
+
+<div class="modal-box">
+
+<h3 id="title">Add Student</h3>
+
+<input type="hidden" id="id">
+
+<input type="text"
+id="name"
+placeholder="Full Name">
+
+<select id="gender">
+
+<option>Male</option>
+<option>Female</option>
+
+</select>
+
+<input type="text"
+id="class"
+placeholder="Class">
+
+<button class="save"
+onclick="saveStudent()">
+
+Save
+
+</button>
+
+<button class="close"
+onclick="closeModal()">
+
+Close
+
+</button>
+
+</div>
+
+</div>
+
+
+<script src="js/students.js"></script>
+
+</body>
+
+</html>

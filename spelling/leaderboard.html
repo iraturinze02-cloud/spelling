@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="UTF-8">
+<title>Leaderboard</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f2f2f2;
+margin:0;
+}
+
+.header{
+background:#f59e0b;
+color:white;
+padding:15px;
+text-align:center;
+}
+
+.container{
+max-width:900px;
+margin:auto;
+padding:20px;
+}
+
+table{
+width:100%;
+background:white;
+border-collapse:collapse;
+border-radius:10px;
+overflow:hidden;
+}
+
+th,td{
+padding:12px;
+border-bottom:1px solid #ddd;
+text-align:center;
+}
+
+.top1{
+background:#ffd700;
+font-weight:bold;
+}
+
+.top2{
+background:#c0c0c0;
+font-weight:bold;
+}
+
+.top3{
+background:#cd7f32;
+font-weight:bold;
+}
+
+button{
+padding:10px;
+margin-top:10px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+background:#2563eb;
+color:white;
+}
+
+..rank{
+font-size:22px;
+font-weight:bold;
+  }
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+
+<h2 id="title">
+YOUNG SPELLERS Contest Ranking
+</h2>
+
+</div>
+
+
+<button
+id="nextRoundBtn"
+onclick="nextRound()">
+
+Start Next Round
+
+</button>
+
+
+<div class="container">
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Rank</th>
+<th>Name</th>
+<th>Class</th>
+<th>Score</th>
+
+</tr>
+
+</thead>
+
+<tbody id="list"></tbody>
+
+</table>
+
+<button onclick="load()">
+
+Refresh
+
+</button>
+
+</div>
+
+
+<script>
+
+async function load(){
+
+const res=
+await fetch(
+"/.netlify/functions/spellingLeaderboard"
+);
+
+const data=
+await res.json();
+
+
+let round=
+parseInt(
+
+localStorage.getItem(
+"currentRound"
+) || 1
+
+);
+
+
+if(round<=3){
+
+document.getElementById(
+"title"
+).innerText=
+
+"YOUNG SPELLERS Contest Ranking after Round "
++ round;
+
+}
+else{
+
+document.getElementById(
+"title"
+).innerText=
+
+"YOUNG SPELLERS Contest Ranking";
+
+document.getElementById(
+"nextRoundBtn"
+).style.display=
+"none";
+
+}
+
+
+let html="";
+
+
+data.leaderboard.forEach((s,i)=>{
+
+let cls="";
+let rank=i+1;
+
+if(i===0){
+
+cls="top1";
+rank="🥇";
+
+}
+
+if(i===1){
+
+cls="top2";
+rank="🥈";
+
+}
+
+if(i===2){
+
+cls="top3";
+rank="🥉";
+
+}
+
+
+html+=`
+
+<tr class="${cls}">
+
+<td class="rank">
+
+${rank}
+
+</td>
+
+<td>
+
+${s.full_name}
+
+</td>
+
+<td>
+
+${s.class_name}
+
+</td>
+
+<td>
+
+${s.total_score}
+
+</td>
+
+</tr>
+
+`;
+
+});
+
+
+document.getElementById(
+"list"
+).innerHTML=html;
+
+}
+
+
+function nextRound(){
+
+let round=
+parseInt(
+
+localStorage.getItem(
+"currentRound"
+) || 1
+
+);
+
+round++;
+
+localStorage.setItem(
+"currentRound",
+round
+);
+
+window.location=
+"teacher.html";
+
+}
+
+
+load();
+
+</script>
+
+</body>
+
+</html>

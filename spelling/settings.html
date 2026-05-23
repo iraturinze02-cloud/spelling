@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+content="width=device-width, initial-scale=1">
+
+<title>Competition Settings</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
+
+body{
+background:#f3f4f6;
+color:#1f2937;
+}
+
+.header{
+
+background:#1e40af;
+color:white;
+padding:20px;
+font-size:28px;
+font-weight:bold;
+text-align:center;
+
+box-shadow:
+0 4px 10px rgba(0,0,0,.15);
+
+}
+
+.container{
+
+max-width:1200px;
+margin:auto;
+padding:20px;
+
+}
+
+.card{
+
+background:white;
+
+padding:20px;
+
+border-radius:15px;
+
+margin-bottom:20px;
+
+box-shadow:
+0 4px 12px rgba(0,0,0,.1);
+
+}
+
+.section-title{
+
+font-size:20px;
+font-weight:bold;
+
+margin-bottom:15px;
+
+color:#1e40af;
+
+border-bottom:
+2px solid #e5e7eb;
+
+padding-bottom:10px;
+
+}
+
+.row{
+
+display:grid;
+
+grid-template-columns:
+repeat(auto-fit,minmax(250px,1fr));
+
+gap:15px;
+
+margin-top:15px;
+
+}
+
+.input-group{
+
+display:flex;
+flex-direction:column;
+
+}
+
+label{
+
+font-size:14px;
+font-weight:bold;
+
+margin-bottom:5px;
+
+}
+
+input,
+select{
+
+padding:12px;
+
+border:
+1px solid #d1d5db;
+
+border-radius:8px;
+
+font-size:15px;
+
+outline:none;
+
+}
+
+input:focus,
+select:focus{
+
+border-color:#2563eb;
+
+}
+
+button{
+
+padding:12px 18px;
+
+border:none;
+
+border-radius:8px;
+
+cursor:pointer;
+
+font-size:15px;
+
+font-weight:bold;
+
+transition:.3s;
+
+}
+
+button:hover{
+
+transform:scale(1.03);
+
+}
+
+.primary{
+
+background:#2563eb;
+color:white;
+
+}
+
+.success{
+
+background:#16a34a;
+color:white;
+
+}
+
+.warning{
+
+background:#f59e0b;
+color:white;
+
+}
+
+.danger{
+
+background:#dc2626;
+color:white;
+
+}
+
+.gray{
+
+background:#6b7280;
+color:white;
+
+}
+
+.stage-box{
+
+background:#f9fafb;
+
+border:
+1px solid #e5e7eb;
+
+padding:15px;
+
+border-radius:10px;
+
+margin-top:15px;
+
+}
+
+.stage-title{
+
+font-size:18px;
+font-weight:bold;
+color:#1e3a8a;
+
+margin-bottom:15px;
+
+}
+
+#competitionName{
+
+font-size:22px;
+
+font-weight:bold;
+
+color:#16a34a;
+
+margin-top:10px;
+
+}
+
+.footer-buttons{
+
+display:flex;
+
+gap:15px;
+
+flex-wrap:wrap;
+
+margin-top:20px;
+
+}
+
+.modal{
+
+position:fixed;
+
+top:0;
+left:0;
+
+width:100%;
+height:100%;
+
+background:
+rgba(0,0,0,.6);
+
+display:none;
+
+justify-content:center;
+align-items:center;
+
+padding:20px;
+
+z-index:999;
+
+}
+
+.modal-content{
+
+background:white;
+
+width:700px;
+
+max-height:90vh;
+
+overflow:auto;
+
+padding:25px;
+
+border-radius:15px;
+
+}
+
+.modal-header{
+
+font-size:22px;
+
+font-weight:bold;
+
+margin-bottom:20px;
+
+color:#1e40af;
+
+}
+
+.close{
+
+float:right;
+
+cursor:pointer;
+
+font-size:25px;
+
+font-weight:bold;
+
+color:red;
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+
+YOUNG SPELLERS SYSTEM SETTINGS
+
+</div>
+
+<div class="container">
+
+<!-- Active competition -->
+
+<div class="card">
+
+<div class="section-title">
+
+Active Competition
+
+</div>
+
+<div id="competitionName">
+
+Loading...
+
+</div>
+
+<div class="footer-buttons">
+
+<button
+class="primary"
+onclick="openCompetitionModal()">
+
+Create New Competition
+
+</button>
+
+</div>
+
+</div>
+
+
+<!-- Judges -->
+
+<div class="card">
+
+<div class="section-title">
+
+Select Judges For Competition
+
+</div>
+
+<div class="row">
+
+<div class="input-group">
+
+<label>
+
+Registered Judges
+
+</label>
+
+<select
+id="judges"
+multiple
+style="height:150px">
+
+</select>
+
+</div>
+
+</div>
+
+<div class="footer-buttons">
+
+<button
+class="success"
+onclick="saveJudges()">
+
+Save Selected Judges
+
+</button>
+
+</div>
+
+</div>
+
+
+<!-- Stage Settings -->
+
+<div class="card">
+
+<div class="section-title">
+
+Competition Stages
+
+</div>
+
+<div id="stageContainer">
+
+No stages created
+
+</div>
+
+<div class="footer-buttons">
+
+<button
+class="primary"
+onclick="openStageModal()">
+
+Add / Edit Stages
+
+</button>
+
+</div>
+
+</div>
+
+
+<!-- Stage Rules -->
+
+<div class="card">
+
+<div class="section-title">
+
+Stage Rules
+
+</div>
+
+<div class="row">
+
+<div class="input-group">
+
+<label>
+
+Select Stage
+
+</label>
+
+<select
+id="stageSelect">
+
+</select>
+
+</div>
+
+<div class="input-group">
+
+<label>
+
+Rounds Per Participant
+
+</label>
+
+<select
+id="rounds">
+
+<option>1</option>
+<option>2</option>
+<option>3</option>
+<option>4</option>
+<option>5</option>
+<option>6</option>
+
+</select>
+
+</div>
+
+<div class="input-group">
+
+<label>
+
+Words Per Round
+
+</label>
+
+<select
+id="words">
+
+<option>1</option>
+<option>2</option>
+<option>3</option>
+<option>4</option>
+<option>5</option>
+<option>6</option>
+<option>7</option>
+<option>8</option>
+<option>9</option>
+<option>10</option>
+
+</select>
+
+</div>
+
+</div>
+
+<div class="footer-buttons">
+
+<button
+class="success"
+onclick="saveStageRules()">
+
+Save Rules
+
+</button>
+
+</div>
+
+</div>
+
+
+<div class="footer-buttons">
+
+<button
+class="gray"
+onclick="goHome()">
+
+Back Home
+
+</button>
+
+</div>
+
+</div>
+
+
+<!-- Competition Modal -->
+
+<div
+class="modal"
+id="competitionModal">
+
+<div class="modal-content">
+
+<div class="modal-header">
+
+Create Competition
+
+<span
+class="close"
+onclick="closeCompetitionModal()">
+
+×
+
+</span>
+
+</div>
+
+<div class="row">
+
+<div class="input-group">
+
+<label>
+
+Competition Name
+
+</label>
+
+<input
+id="competitionInput"
+placeholder=
+"Young Spellers Contest">
+
+</div>
+
+</div>
+
+<div class="footer-buttons">
+
+<button
+class="success"
+onclick="saveCompetition()">
+
+Create Competition
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- Stage Modal -->
+
+<div
+class="modal"
+id="stageModal">
+
+<div class="modal-content">
+
+<div class="modal-header">
+
+Configure Competition Stages
+
+<span
+class="close"
+onclick="closeStageModal()">
+
+×
+
+</span>
+
+</div>
+
+<div class="row">
+
+<div class="input-group">
+
+<label>
+
+How Many Stages?
+
+</label>
+
+<select
+id="stageCount">
+
+<option>1</option>
+<option>2</option>
+<option>3</option>
+<option>4</option>
+<option>5</option>
+<option>6</option>
+<option>7</option>
+<option>8</option>
+<option>9</option>
+<option>10</option>
+
+</select>
+
+</div>
+
+</div>
+
+<div id="dynamicStages">
+
+</div>
+
+<div class="footer-buttons">
+
+<button
+class="success"
+onclick="saveStages()">
+
+Save Stages
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<script src="js/settings.js"></script>
+
+<script>
+
+document
+.getElementById(
+"stageCount"
+)
+
+.addEventListener(
+"change",
+generateStageForms
+);
+
+
+function generateStageForms(){
+
+const count=
+parseInt(
+
+document
+.getElementById(
+"stageCount"
+)
+.value
+
+);
+
+let html="";
+
+for(
+let i=1;
+i<=count;
+i++
+){
+
+html+=`
+
+<div class="stage-box">
+
+<div class="stage-title">
+
+Stage ${i}
+
+</div>
+
+<div class="row">
+
+<div class="input-group">
+
+<label>
+Stage Name
+</label>
+
+<input
+class="stageName"
+placeholder=
+"Stage ${i}">
+
+</div>
+
+<div class="input-group">
+
+<label>
+Participants
+</label>
+
+<input
+class="participants"
+type="number">
+
+</div>
+
+<div class="input-group">
+
+<label>
+Qualification Rule
+</label>
+
+<select
+class="rule">
+
+<option value="top">
+
+Top Performers
+
+</option>
+
+<option value="low">
+
+Low Performers
+
+</option>
+
+<option value="random">
+
+Random Participants
+
+</option>
+
+</select>
+
+</div>
+
+<div class="input-group">
+
+<label>
+Qualifiers
+
+</label>
+
+<input
+class="qualifiers"
+type="number">
+
+</div>
+
+</div>
+
+</div>
+
+`;
+
+}
+
+document
+.getElementById(
+"dynamicStages"
+)
+
+.innerHTML=
+html;
+
+}
+
+function openCompetitionModal(){
+
+document
+.getElementById(
+"competitionModal"
+)
+
+.style.display=
+"flex";
+
+}
+
+function closeCompetitionModal(){
+
+document
+.getElementById(
+"competitionModal"
+)
+
+.style.display=
+"none";
+
+}
+
+function openStageModal(){
+
+document
+.getElementById(
+"stageModal"
+)
+
+.style.display=
+"flex";
+
+generateStageForms();
+
+}
+
+function closeStageModal(){
+
+document
+.getElementById(
+"stageModal"
+)
+
+.style.display=
+"none";
+
+}
+
+</script>
+
+</body>
+</html>

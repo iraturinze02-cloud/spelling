@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width,initial-scale=1">
+
+<title>Competitions</title>
+
+<style>
+
+*{
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
+
+body{
+margin:0;
+background:#f3f4f6;
+}
+
+/* HEADER */
+
+.header{
+
+background:#2563eb;
+color:white;
+
+padding:20px;
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+}
+
+.header h1{
+margin:0;
+}
+
+.back{
+
+background:white;
+color:#2563eb;
+
+border:none;
+
+padding:10px 16px;
+
+border-radius:8px;
+
+font-weight:bold;
+
+cursor:pointer;
+
+}
+
+/* CONTAINER */
+
+.container{
+
+max-width:1200px;
+
+margin:auto;
+
+padding:25px;
+
+}
+
+/* FORM */
+
+.form{
+
+background:white;
+
+padding:25px;
+
+border-radius:15px;
+
+margin-bottom:25px;
+
+box-shadow:
+0 2px 10px rgba(0,0,0,.08);
+
+}
+
+.form h2{
+
+margin-top:0;
+
+}
+
+input{
+
+width:100%;
+
+padding:14px;
+
+margin-top:10px;
+
+border:1px solid #d1d5db;
+
+border-radius:10px;
+
+font-size:16px;
+
+}
+
+.create{
+
+margin-top:15px;
+
+background:#16a34a;
+
+color:white;
+
+border:none;
+
+padding:14px 20px;
+
+border-radius:10px;
+
+font-size:16px;
+
+font-weight:bold;
+
+cursor:pointer;
+
+}
+
+/* TABLE */
+
+.table-box{
+
+background:white;
+
+padding:20px;
+
+border-radius:15px;
+
+box-shadow:
+0 2px 10px rgba(0,0,0,.08);
+
+overflow:auto;
+
+}
+
+table{
+
+width:100%;
+
+border-collapse:collapse;
+
+}
+
+th{
+
+background:#eff6ff;
+
+padding:15px;
+
+text-align:left;
+
+}
+
+td{
+
+padding:15px;
+
+border-top:1px solid #e5e7eb;
+
+}
+
+/* STATUS */
+
+.active{
+
+background:#dcfce7;
+color:#166534;
+
+padding:6px 12px;
+
+border-radius:30px;
+
+font-size:14px;
+
+font-weight:bold;
+
+display:inline-block;
+
+}
+
+.inactive{
+
+background:#fee2e2;
+color:#991b1b;
+
+padding:6px 12px;
+
+border-radius:30px;
+
+font-size:14px;
+
+font-weight:bold;
+
+display:inline-block;
+
+}
+
+/* ACTION BUTTONS */
+
+.action{
+
+border:none;
+
+padding:10px 14px;
+
+border-radius:8px;
+
+cursor:pointer;
+
+color:white;
+
+font-weight:bold;
+
+margin-right:5px;
+
+}
+
+.open{
+background:#2563eb;
+}
+
+.activate{
+background:#16a34a;
+}
+
+.delete{
+background:#dc2626;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+
+<h1>
+
+Competitions
+
+</h1>
+
+<button
+class="back"
+onclick="window.location='teacher-home.html'">
+
+Back
+
+</button>
+
+</div>
+
+
+<div class="container">
+
+<!-- CREATE -->
+
+<div class="form">
+
+<h2>
+
+Create Competition
+
+</h2>
+
+<input
+type="text"
+id="competitionName"
+placeholder="Competition Name">
+
+<button
+class="create"
+onclick="createCompetition()">
+
+Create Competition
+
+</button>
+
+</div>
+
+
+<!-- LIST -->
+
+<div class="table-box">
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>ID</th>
+
+<th>Competition</th>
+
+<th>Status</th>
+
+<th>Created</th>
+
+<th>Actions</th>
+
+</tr>
+
+</thead>
+
+<tbody id="competitionTable">
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+
+<script>
+
+
+async function loadCompetitions(){
+
+const res =
+await fetch(
+"/.netlify/functions/getCompetitions"
+);
+
+const data =
+await res.json();
+
+console.log("DEBUG competitions:", data);
+
+const competitions = data.competitions || [];
+
+let html = "";
+
+competitions.forEach(comp=>{
+
+html += `
+<tr>
+
+<td>
+${comp.id}
+</td>
+
+<td>
+${comp.competition_name}
+</td>
+
+<td>
+<span class="${comp.status==="active" ? "active" : "inactive"}">
+${comp.status}
+</span>
+</td>
+
+<td>
+${comp.created_at ? new Date(comp.created_at).toLocaleDateString() : "-"}
+</td>
+
+<td>
+
+<button class="action open" onclick="openCompetition(${comp.id})">
+Open
+</button>
+
+<button class="action activate" onclick="activateCompetition(${comp.id})">
+Activate
+</button>
+
+<button class="action delete" onclick="deleteCompetition(${comp.id})">
+Delete
+</button>
+
+</td>
+
+</tr>
+`;
+});
+
+document.getElementById(
+"competitionTable"
+).innerHTML = html;
+
+  }
+
+
+async function createCompetition(){
+
+let name =
+document.getElementById(
+"competitionName"
+).value.trim();
+
+if(!name){
+
+alert(
+"Enter competition name"
+);
+
+return;
+
+}
+
+await fetch(
+
+"/.netlify/functions/addCompetition",
+
+{
+
+method:"POST",
+
+headers:{
+"Content-Type":
+"application/json"
+},
+
+body:JSON.stringify({
+
+competition_name:name
+
+})
+
+}
+
+);
+
+document.getElementById(
+"competitionName"
+).value="";
+
+loadCompetitions();
+
+}
+
+
+
+async function activateCompetition(id){
+
+await fetch(
+
+"/.netlify/functions/activateCompetition",
+
+{
+
+method:"POST",
+
+headers:{
+"Content-Type":
+"application/json"
+},
+
+body:JSON.stringify({
+
+competition_id: id
+
+})
+
+}
+
+);
+
+loadCompetitions();
+
+}
+
+
+
+async function deleteCompetition(id){
+
+if(!confirm(
+"Delete competition?"
+)){
+
+return;
+
+}
+
+await fetch(
+
+"/.netlify/functions/deleteCompetition",
+
+{
+
+method:"POST",
+
+headers:{
+"Content-Type":
+"application/json"
+},
+
+body:JSON.stringify({
+
+id
+
+})
+
+}
+
+);
+
+loadCompetitions();
+
+}
+
+
+
+function openCompetition(id){
+
+localStorage.setItem(
+"competitionId",
+id
+);
+
+window.location=
+"competition-stages.html";
+
+}
+
+
+
+loadCompetitions();
+
+</script>
+
+</body>
+
+  </html>

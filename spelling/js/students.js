@@ -2,22 +2,110 @@ let editing=false;
 
 let competition = null;
 
-async function loadCompetition() {
-  try {
-    const res = await fetch("/.netlify/functions/getActiveCompetition");
-    const data = await res.json();
+/* ===============================
+INITIAL LOAD
+=============================== */
 
-    competition = data.competition || null;
+window.onload=async()=>{
 
-    if (competition) {
-      localStorage.setItem("competition_id", competition.id);
-    } else {
-      localStorage.removeItem("competition_id");
-    }
-  } catch (error) {
-    console.log("Competition error:", error);
-  }
+await loadCompetition();
+
+await loadStages();
+
+};
+/* ===============================
+LOAD ACTIVE COMPETITION
+=============================== */
+
+async function loadCompetition(){
+
+try{
+
+const res=
+await fetch(
+"/.netlify/functions/getActiveCompetition"
+);
+
+const data=
+await res.json();
+
+competition=
+data.competition || null;
+
+
+/* ✅ ADD THIS: store globally + localStorage */
+if(competition){
+localStorage.setItem("competition_id", competition.id);
 }
+else{
+localStorage.removeItem("competition_id");
+}
+
+
+document.getElementById(
+"competitionName"
+).innerText=
+
+competition
+?
+competition.competition_name
+:
+"No Active Competition";
+
+}
+catch(error){
+
+console.log(
+"Competition error:",
+error
+);
+
+}
+
+}
+
+/* ===============================
+LOAD STAGES
+=============================== */
+
+async function loadStages(){
+
+try{
+
+if(!competition){
+return;
+}
+
+
+const res=
+await fetch(
+
+"/.netlify/functions/getStages?competition_id="+
+competition.id
+
+);
+
+
+const data=
+await res.json();
+
+stages=
+data.stages || [];
+
+
+renderStages();
+
+renderStageDropdown();
+
+}
+catch(error){
+
+console.log(error);
+
+}
+
+}
+
 
 async function loadStudents(){
 

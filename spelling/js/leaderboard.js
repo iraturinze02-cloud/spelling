@@ -12,25 +12,57 @@ async function loadCompetition(){
 
 try{
 
-const competition_id=
-localStorage.getItem(
-"competition_id"
+const res=
+await fetch("/api",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+action:"getActiveCompetition"
+
+})
+
+});
+
+const data=
+await res.json();
+
+console.log(
+"Competition:",
+data
 );
 
-if(!competition_id){
+competition=
+data.competition || null;
+
+if(!competition){
+
+console.log(
+"No competition"
+);
+
 return;
 }
 
-competition={
-id:competition_id
-};
+localStorage.setItem(
+"competition_id",
+competition.id
+);
 
 await loadStages();
 
 }
 catch(error){
 
-console.log(error);
+console.log(
+"Competition error:",
+error
+);
 
 }
 
@@ -458,7 +490,11 @@ async function init(){
 
 await loadCompetition();
 
+if(stages.length>0){
+
 await load();
+
+}
 
 }
 

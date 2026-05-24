@@ -1,12 +1,14 @@
-const sql =
-require("./spellingDb");
+import { neon } from "@neondatabase/serverless";
 
-exports.handler = async(event)=>{
+export async function onRequest(context){
 
 try{
 
+const sql =
+neon(context.env.NEON_URL);
+
 const body =
-JSON.parse(event.body);
+await context.request.json();
 
 const users =
 await sql`
@@ -23,48 +25,35 @@ LIMIT 1
 
 if(users.length===0){
 
-return{
-
-statusCode:200,
-
-body:JSON.stringify({
+return Response.json({
 
 success:false
 
-})
-
-};
+});
 
 }
 
-return{
-
-statusCode:200,
-
-body:JSON.stringify({
+return Response.json({
 
 success:true,
 user:users[0]
 
-})
-
-};
+});
 
 }
+
 catch(error){
 
-return{
-
-statusCode:500,
-
-body:JSON.stringify({
+return Response.json({
 
 error:error.message
 
-})
+},
 
-};
+{status:500}
+
+);
 
 }
 
-};
+}

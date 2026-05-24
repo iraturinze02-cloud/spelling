@@ -499,8 +499,4 @@ await load();
 }
 init();
 
-setInterval(
-autoRefresh,
-10000
-);
 

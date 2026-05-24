@@ -118,27 +118,6 @@ cursor:pointer;
 
   </div>
 
-<div class="header">
-Competition Stages
-</div>
-  <div class="stage">
-
-<h3>Create New Stage</h3>
-
-<input id="stageName" placeholder="Stage name" style="width:100%;padding:10px;margin:5px 0;">
-<input id="stageNumber" type="number" placeholder="Stage number" style="width:100%;padding:10px;margin:5px 0;">
-<input id="participants" type="number" placeholder="Participants" style="width:100%;padding:10px;margin:5px 0;">
-<input id="rounds" type="number" placeholder="Total rounds" style="width:100%;padding:10px;margin:5px 0;">
-<input id="wordsPerRound" type="number" placeholder="Words per round" style="width:100%;padding:10px;margin:5px 0;">
-<input id="topQualifiers" type="number" placeholder="Top qualifiers" style="width:100%;padding:10px;margin:5px 0;">
-<input id="judges" type="number" placeholder="Judge count" style="width:100%;padding:10px;margin:5px 0;">
-
-<button onclick="createStage()">
-CREATE STAGE
-</button>
-
-  </div>
-
 <div class="container">
 
 <div class="competition-box" id="competitionName">
@@ -181,36 +160,6 @@ async function loadCompetition() {
   loadStages();
 }
 
-/* CREATE STAGE */
-async function createStage() {
-
-  const body = {
-    competition_id: competition.id,
-    stage_name: document.getElementById("stageName").value,
-    stage_number: document.getElementById("stageNumber").value,
-    participant_count: document.getElementById("participants").value,
-    total_rounds: document.getElementById("rounds").value,
-    words_per_round: document.getElementById("wordsPerRound").value,
-    top_qualifiers: document.getElementById("topQualifiers").value,
-    judge_count: document.getElementById("judges").value,
-    status: "inactive"
-  };
-
-  const res = await fetch("/api", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "createStage",
-      ...body
-    })
-  });
-
-  const data = await res.json();
-
-  alert(data.message || "Stage created");
-
-  loadStages();
-}
 
 /* GET STAGES */
 async function loadStages() {
@@ -235,10 +184,11 @@ async function loadStages() {
 function renderStages() {
 
   const container = document.getElementById("stagesContainer");
-
   container.innerHTML = "";
 
   stages.forEach(stage => {
+
+    const isActive = stage.status === "active";
 
     const div = document.createElement("div");
     div.className = "stage";
@@ -254,18 +204,45 @@ function renderStages() {
         Words per round: ${stage.words_per_round}<br>
         Top qualifiers: ${stage.top_qualifiers}<br>
         Judges: ${stage.judge_count}<br>
-        Status: ${stage.status}
+        Status: <b>${stage.status}</b>
       </div>
 
       <button onclick="openStage(${stage.id})">
         OPEN STAGE
+      </button>
+
+      <button 
+        onclick="activateStage(${stage.id})"
+        style="
+          background:${isActive ? '#16a34a' : '#dc2626'};
+          margin-left:10px;
+        "
+      >
+        ${isActive ? 'ACTIVE' : 'ACTIVATE'}
       </button>
     `;
 
     container.appendChild(div);
   });
 }
+async function activateStage(stageId) {
 
+  const res = await fetch("/api", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "activateStage",
+      stage_id: stageId,
+      competition_id: competition.id
+    })
+  });
+
+  const data = await res.json();
+
+  alert(data.message || "Stage updated");
+
+  loadStages();
+  }
 /* NAVIGATION */
 function goHome() {
   window.location = "teacher-home.html";

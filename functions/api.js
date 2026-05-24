@@ -513,6 +513,126 @@ if (action === "getStudentsWithGroups") {
     stages
   });
     }
+
+
+    /* =====================================================
+    6. QUALIFY NEXT ROUND (CORE ENGINE)
+    ===================================================== */
+    if (action === "qualifyNextRound") {
+
+      const {
+        competition_id,
+        stage_number,
+        round_number,
+        qualification_rule,
+        qualifier_count
+      } = body;
+
+      const students = await sql`
+        SELECT 
+          s.id,
+          s.full_name,
+          COALESCE(SUM(w.score), 0) AS total_score
+        FROM students s
+        LEFT JOIN word_attempts w
+          ON s.id = w.student_id
+          AND w.round_number = ${round_number}
+        WHERE s.competition_id = ${competition_id}
+          AND s.stage_number = ${stage_number}
+        GROUP BY s.id, s.full_name
+      `;
+
+      let selected = [];
+
+      if (qualification_rule === "top") {
+        selected = students.sort((a,b)=>b.total_score-a.total_score)
+          .slice(0, qualifier_count);
+      }
+
+      if (qualification_rule === "low") {
+        selected = students.sort((a,b)=>a.total_score-b.total_score)
+          .slice(0, qualifier_count);
+      }
+
+      if (qualification_rule === "random") {
+        selected = students.sort(()=>Math.random()-0.5)
+          .slice(0, qualifier_count);
+      }
+
+      const nextRound = round_number + 1;
+
+      for (const s of selected) {
+
+        await sql`
+          INSERT INTO word_attempts (
+            student_id,
+            competition_id,
+            round_number,
+            score,
+            status,
+            final_decision
+          )
+          VALUES (
+            ${s.id},
+            ${competition_id},
+            ${nextRound},
+            0,
+            'qualified',
+            'auto'
+          )
+        `;
+      }
+
+      return json({
+        success: true,
+        next_round: nextRound,
+        qualified: selected
+      });
+    }
+
+    /* =====================================================
+    7. AUTO ADVANCE STAGE
+    ===================================================== */
+    if (action === "autoAdvanceStage") {
+
+      const { competition_id, current_stage_number } = body;
+
+      const nextStage = await sql`
+        SELECT *
+        FROM competition_stages
+        WHERE competition_id = ${competition_id}
+          AND stage_number > ${current_stage_number}
+        ORDER BY stage_number ASC
+        LIMIT 1
+      `;
+
+      if (nextStage.length === 0) {
+        return json({ success: true, message: "Competition finished" });
+      }
+
+      await sql`
+        UPDATE competition_stages
+        SET status = 'inactive'
+        WHERE competition_id = ${competition_id}
+      `;
+
+      await sql`
+        UPDATE competition_stages
+        SET status = 'active'
+        WHERE id = ${nextStage[0].id}
+      `;
+
+      await sql`
+        UPDATE students
+        SET stage_number = ${nextStage[0].stage_number}
+        WHERE competition_id = ${competition_id}
+      `;
+
+      return json({
+        success: true,
+        next_stage: nextStage[0]
+      });
+  }
     // =====================================================
     // DEFAULT
     // =====================================================

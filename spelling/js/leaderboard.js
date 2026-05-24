@@ -1,209 +1,467 @@
 
 
-let refreshing = false;
-let stages = [];
+let refreshing=false;
+let stages=[];
+let competition=null;
+
+/* ===============================
+LOAD ACTIVE COMPETITION
+=============================== */
+
+async function loadCompetition(){
+
+try{
+
+const competition_id=
+localStorage.getItem(
+"competition_id"
+);
+
+if(!competition_id){
+return;
+}
+
+competition={
+id:competition_id
+};
+
+await loadStages();
+
+}
+catch(error){
+
+console.log(error);
+
+}
+
+}
+
+
 /* ===============================
 LOAD ACTIVE STAGE
 =============================== */
 
-async function loadStages() {
-  try {
+async function loadStages(){
 
-    if (!competition) return;
+try{
 
-    const res = await fetch("/api", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "getActiveStage",
-        competition_id: competition.id
-      })
-    });
+if(!competition)return;
 
-    const data = await res.json();
+const res=
+await fetch("/api",{
 
-    stages = data.stages || [];
+method:"POST",
 
-  } catch (error) {
-    console.log(error);
-  }
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+action:"getActiveStage",
+competition_id:competition.id
+
+})
+
+});
+
+const data=
+await res.json();
+
+/* FIX */
+
+if(data.stage){
+
+stages=[data.stage];
+
+localStorage.setItem(
+"active_stage",
+data.stage.stage_number
+);
+
+}else{
+
+stages=[];
+
 }
+
+}
+catch(error){
+
+console.log(error);
+
+}
+
+}
+
 
 /* ===============================
 LOAD LEADERBOARD
 =============================== */
 
-async function load() {
+async function load(){
 
-  try {
+try{
 
-    const competition_id = localStorage.getItem("competition_id");
-    const activeStage = stages.find(s => s.status === "active") || stages[0];
+const competition_id=
+localStorage.getItem(
+"competition_id"
+);
 
-    if (!competition_id || ! activeStage) {
-      document.getElementById("title").innerText =
-        "No Active Competition / Stage";
-      document.getElementById("list").innerHTML = "";
-      return;
-    }
+const activeStage=
+stages[0];
 
-    
-    const res = await fetch("/api", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "getLeaderboard",
-        competition_id,
-        stage_number
-      })
-    });
+if(
+!competition_id ||
+!activeStage
+){
 
-    const data = await res.json();
+document.getElementById(
+"title"
+).innerText=
 
-    let leaderboard = data.leaderboard || [];
+"No Active Competition / Stage";
 
-    /* ===============================
-    TITLE LOGIC (FIXED)
-    =============================== */
+document.getElementById(
+"list"
+).innerHTML="";
 
-    document.getElementById("title").innerText =
-      "YOUNG SPELLERS - Stage " + stage_number + " Ranking";
+return;
 
-    /* ===============================
-    EMPTY STATE
-    =============================== */
-
-    if (leaderboard.length === 0) {
-      document.getElementById("list").innerHTML =
-        "<tr><td colspan='4'>No results yet</td></tr>";
-      return;
-    }
-
-    /* ===============================
-    RENDER TABLE
-    =============================== */
-
-    let html = "";
-
-    leaderboard.forEach((s, i) => {
-
-      let cls = "";
-      let rank = i + 1;
-
-      if (i === 0) {
-        cls = "top1";
-        rank = "🥇";
-      } else if (i === 1) {
-        cls = "top2";
-        rank = "🥈";
-      } else if (i === 2) {
-        cls = "top3";
-        rank = "🥉";
-      }
-
-      html += `
-        <tr class="${cls}">
-          <td class="rank">${rank}</td>
-          <td>${s.full_name}</td>
-          <td>${s.class_name}</td>
-          <td>${s.total_score}</td>
-        </tr>
-      `;
-    });
-
-    document.getElementById("list").innerHTML = html;
-
-  } catch (error) {
-    console.log("Load error:", error);
-  }
 }
+
+
+/* FIX */
+
+const stage_number=
+activeStage.stage_number;
+
+
+const res=
+await fetch("/api",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+action:"getLeaderboard",
+
+competition_id,
+
+stage_number
+
+})
+
+});
+
+const data=
+await res.json();
+
+const leaderboard=
+data.leaderboard || [];
+
+
+/* TITLE */
+
+document.getElementById(
+"title"
+).innerText=
+
+"YOUNG SPELLERS - Stage "
++
+stage_number
++
+" Ranking";
+
+
+/* EMPTY */
+
+if(
+leaderboard.length===0
+){
+
+document.getElementById(
+"list"
+).innerHTML=
+
+"<tr><td colspan='4'>No results yet</td></tr>";
+
+return;
+
+}
+
+
+/* RENDER */
+
+let html="";
+
+leaderboard.forEach((s,i)=>{
+
+let cls="";
+let rank=i+1;
+
+if(i===0){
+
+cls="top1";
+rank="🥇";
+
+}
+else if(i===1){
+
+cls="top2";
+rank="🥈";
+
+}
+else if(i===2){
+
+cls="top3";
+rank="🥉";
+
+}
+
+html+=`
+
+<tr class="${cls}">
+
+<td class="rank">
+
+${rank}
+
+</td>
+
+<td>
+
+${s.full_name}
+
+</td>
+
+<td>
+
+${s.class_name}
+
+</td>
+
+<td>
+
+${s.total_score}
+
+</td>
+
+</tr>
+
+`;
+
+});
+
+document.getElementById(
+"list"
+).innerHTML=
+html;
+
+}
+catch(error){
+
+console.log(
+"Load error:",
+error
+);
+
+}
+
+}
+
 
 /* ===============================
-NEXT ROUND (QUALIFICATION + STAGE ADVANCE)
+NEXT ROUND
 =============================== */
 
-async function nextRound() {
+async function nextRound(){
 
-  try {
+try{
 
-    const competition_id = localStorage.getItem("competition_id");
-    const currentStage = parseInt(localStorage.getItem("active_stage") || 1);
-    const currentRound = parseInt(localStorage.getItem("currentRound") || 1);
+const competition_id=
+localStorage.getItem(
+"competition_id"
+);
 
-    if (!competition_id) {
-      alert("No competition selected");
-      return;
-    }
+const activeStage=
+stages[0];
 
-    /* 1. QUALIFY STUDENTS FOR NEXT ROUND */
-    const res = await fetch("/api", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "qualifyNextRound",
-        competition_id,
-        stage_number: currentStage,
-        round_number: currentRound,
-        qualification_rule: localStorage.getItem("qualification_rule") || "top",
-        qualifier_count: parseInt(localStorage.getItem("qualifier_count") || 5)
-      })
-    });
+if(
+!competition_id ||
+!activeStage
+){
 
-    const data = await res.json();
+alert(
+"No active stage"
+);
 
-    if (!data.success) {
-      alert(data.message || "Failed to advance round");
-      return;
-    }
+return;
 
-    /* 2. MOVE TO NEXT ROUND */
-    const newRound = currentRound + 1;
-    localStorage.setItem("currentRound", newRound);
-
-    /* 3. CHECK IF STAGE SHOULD AUTO ADVANCE */
-    await fetch("/api", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "autoAdvanceStage",
-        competition_id,
-        current_stage_number: currentStage
-      })
-    });
-
-    /* 4. RELOAD UI */
-    load();
-
-    alert("Round " + newRound + " started!");
-
-  } catch (error) {
-    console.log("Next round error:", error);
-  }
 }
+
+const currentStage=
+activeStage.stage_number;
+
+const currentRound=
+parseInt(
+
+localStorage.getItem(
+"currentRound"
+)||1
+
+);
+
+
+const res=
+await fetch("/api",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+action:"qualifyNextRound",
+
+competition_id,
+
+stage_number:
+currentStage,
+
+round_number:
+currentRound
+
+})
+
+});
+
+const data=
+await res.json();
+
+if(!data.success){
+
+alert(
+data.message ||
+"Failed"
+);
+
+return;
+
+}
+
+
+const newRound=
+currentRound+1;
+
+localStorage.setItem(
+
+"currentRound",
+
+newRound
+
+);
+
+
+/* AUTO STAGE ADVANCE */
+
+await fetch("/api",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+action:"autoAdvanceStage",
+
+competition_id,
+
+current_stage_number:
+currentStage
+
+})
+
+});
+
+
+await loadStages();
+
+await load();
+
+alert(
+"Round "
++
+newRound
++
+" started"
+);
+
+}
+catch(error){
+
+console.log(
+error
+);
+
+}
+
+}
+
 
 /* ===============================
-AUTO REFRESH (SAFE)
+AUTO REFRESH
 =============================== */
 
-async function autoRefresh() {
+async function autoRefresh(){
 
-  if (refreshing) return;
+if(refreshing)return;
 
-  refreshing = true;
+refreshing=true;
 
-  try {
-    await load();
-  } catch (error) {
-    console.log(error);
-  }
+try{
 
-  refreshing = false;
+await loadStages();
+
+await load();
+
 }
+catch(error){
+
+console.log(
+error
+);
+
+}
+
+refreshing=false;
+
+}
+
 
 /* ===============================
 INIT
 =============================== */
 
-load();
+async function init(){
 
-setInterval(autoRefresh, 10000);
+await loadCompetition();
+
+await load();
+
+}
+
+init();
+
+setInterval(
+autoRefresh,
+10000
+);

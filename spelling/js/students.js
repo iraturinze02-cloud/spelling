@@ -66,9 +66,6 @@ async function loadStages() {
 
     stages = data.stages || [];
 
-    renderStages();
-    renderStageDropdown();
-
   } catch (error) {
     console.log(error);
   }
@@ -82,12 +79,16 @@ async function loadStudents() {
   try {
 
     const competition_id = localStorage.getItem("competition_id");
-    const stage_number = localStorage.getItem("active_stage");
+  const competition_id = localStorage.getItem("competition_id");
 
-    if (!competition_id || !stage_number) {
-      alert("No active competition or stage selected");
-      return;
-    }
+const activeStage = stages.find(s => s.status === "active") || stages[0];
+
+if (!competition_id || !activeStage) {
+  alert("No active competition or stage selected");
+  return;
+}
+
+const stage_number = activeStage.stage_number;
 
     const res = await fetch("/api", {
       method: "POST",

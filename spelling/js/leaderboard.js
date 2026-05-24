@@ -11,15 +11,16 @@ async function load() {
   try {
 
     const competition_id = localStorage.getItem("competition_id");
-    const stage_number = localStorage.getItem("active_stage");
+    const activeStage = stages.find(s => s.status === "active") || stages[0];
 
-    if (!competition_id || !stage_number) {
+    if (!competition_id || ! activeStage) {
       document.getElementById("title").innerText =
         "No Active Competition / Stage";
       document.getElementById("list").innerHTML = "";
       return;
     }
 
+    
     const res = await fetch("/api", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

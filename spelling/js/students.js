@@ -78,7 +78,6 @@ LOAD STUDENTS
 async function loadStudents() {
   try {
 
-    const competition_id = localStorage.getItem("competition_id");
   const competition_id = localStorage.getItem("competition_id");
 
 const activeStage = stages.find(s => s.status === "active") || stages[0];
@@ -172,6 +171,8 @@ SAVE STUDENT (ADD / UPDATE)
 =============================== */
 
 async function saveStudent() {
+  const activeStage = stages.find(s => s.status === "active");
+
 
   let data = {
     id: document.getElementById("id").value,
@@ -179,8 +180,8 @@ async function saveStudent() {
     gender: document.getElementById("gender").value,
     class_name: document.getElementById("class").value,
     competition_id: localStorage.getItem("competition_id"),
-    stage_number: localStorage.getItem("active_stage")
-  };
+    stage_number: activeStage ? activeStage.stage_number : null
+};
 
   let action = editing ? "updateStudent" : "addStudent";
 

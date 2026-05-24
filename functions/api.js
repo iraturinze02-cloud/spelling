@@ -16,6 +16,7 @@ export async function onRequest(context) {
 
 
   try {
+    console.log("BODY RECEIVED:", body);
 
     // =====================================================
     // LOGIN (YOU HAD SEPARATE FILE BEFORE)

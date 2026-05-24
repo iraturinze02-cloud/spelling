@@ -372,23 +372,42 @@ export async function onRequest(context) {
       return Response.json({ success: true });
     }
 
-    // =====================================================
-    // ACTIVATE ACTIVE STAGE GET
-    // =====================================================
-    if (action === "getActiveStage") {
+    /* =====================
+GET ACTIVE STAGE
+===================== */
 
-      const result = await sql`
-        SELECT *
-        FROM competition_stages
-        WHERE status='active'
-        LIMIT 1
-      `;
+if(action==="getActiveStage"){
 
-      return Response.json({
-        stage: result[0] || null
-      });
-    }
+const stage=
+await sql`
 
+SELECT *
+
+FROM competition_stages
+
+WHERE competition_id=
+${data.competition_id}
+
+AND status='active'
+
+LIMIT 1
+
+`;
+
+return{
+
+statusCode:200,
+
+body:JSON.stringify({
+
+success:true,
+stage:stage[0] || null
+
+})
+
+};
+
+                            }
     // =====================================================
     // GET ACTIVE COMPETITION
     // =====================================================

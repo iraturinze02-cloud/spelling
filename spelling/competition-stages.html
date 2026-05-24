@@ -151,125 +151,136 @@ Loading competition...
 
 <script>
 
-let competition=null;
-let stages=[];
+let competition = null;
+let stages = [];
 
 /* GET ACTIVE COMPETITION */
-async function loadCompetition(){
+async function loadCompetition() {
 
-const res=
-await fetch("/.netlify/functions/getActiveCompetition");
+  const res = await fetch("/api", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "getActiveCompetition"
+    })
+  });
 
-const data=
-await res.json();
+  const data = await res.json();
 
-competition=data.competition;
+  competition = data.competition || null;
 
-document.getElementById("competitionName").innerText=
-competition.competition_name;
-
-loadStages();
-
-}
-  async function createStage(){
-
-const body={
-competition_id:competition.id,
-stage_name:document.getElementById("stageName").value,
-stage_number:document.getElementById("stageNumber").value,
-participant_count:document.getElementById("participants").value,
-total_rounds:document.getElementById("rounds").value,
-words_per_round:document.getElementById("wordsPerRound").value,
-top_qualifiers:document.getElementById("topQualifiers").value,
-judge_count:document.getElementById("judges").value,
-status:"inactive"
-};
-
-const res=
-await fetch("/.netlify/functions/createStage",{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify(body)
-});
-
-const data=await res.json();
-
-alert(data.message);
-
-loadStages();
-
+  if (!competition) {
+    document.getElementById("competitionName").innerText =
+      "No Active Competition";
+    return;
   }
 
+  document.getElementById("competitionName").innerText =
+    competition.competition_name;
+
+  loadStages();
+}
+
+/* CREATE STAGE */
+async function createStage() {
+
+  const body = {
+    competition_id: competition.id,
+    stage_name: document.getElementById("stageName").value,
+    stage_number: document.getElementById("stageNumber").value,
+    participant_count: document.getElementById("participants").value,
+    total_rounds: document.getElementById("rounds").value,
+    words_per_round: document.getElementById("wordsPerRound").value,
+    top_qualifiers: document.getElementById("topQualifiers").value,
+    judge_count: document.getElementById("judges").value,
+    status: "inactive"
+  };
+
+  const res = await fetch("/api", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "createStage",
+      ...body
+    })
+  });
+
+  const data = await res.json();
+
+  alert(data.message || "Stage created");
+
+  loadStages();
+}
+
 /* GET STAGES */
-async function loadStages(){
+async function loadStages() {
 
-const res=
-await fetch("/.netlify/functions/getStages?competition_id="+competition.id);
+  const res = await fetch("/api", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "getStagesByCompetition",
+      competition_id: competition.id
+    })
+  });
 
-const data=
-await res.json();
+  const data = await res.json();
 
-stages=data.stages;
+  stages = data.stages || [];
 
-renderStages();
-
+  renderStages();
 }
 
 /* RENDER UI */
-function renderStages(){
+function renderStages() {
 
-const container=
-document.getElementById("stagesContainer");
+  const container = document.getElementById("stagesContainer");
 
-container.innerHTML="";
+  container.innerHTML = "";
 
-stages.forEach(stage=>{
+  stages.forEach(stage => {
 
-const div=document.createElement("div");
-div.className="stage";
+    const div = document.createElement("div");
+    div.className = "stage";
 
-div.innerHTML=`
-<div class="stage-title">
-Stage ${stage.stage_number} - ${stage.stage_name}
-</div>
+    div.innerHTML = `
+      <div class="stage-title">
+        Stage ${stage.stage_number} - ${stage.stage_name}
+      </div>
 
-<div class="info">
-Participants: ${stage.participant_count}<br>
-Rounds: ${stage.total_rounds}<br>
-Words per round: ${stage.words_per_round}<br>
-Top qualifiers: ${stage.top_qualifiers}<br>
-Judges: ${stage.judge_count}<br>
-Status: ${stage.status}
-</div>
+      <div class="info">
+        Participants: ${stage.participant_count}<br>
+        Rounds: ${stage.total_rounds}<br>
+        Words per round: ${stage.words_per_round}<br>
+        Top qualifiers: ${stage.top_qualifiers}<br>
+        Judges: ${stage.judge_count}<br>
+        Status: ${stage.status}
+      </div>
 
-<button onclick="openStage(${stage.id})">
-OPEN STAGE
-</button>
-`;
+      <button onclick="openStage(${stage.id})">
+        OPEN STAGE
+      </button>
+    `;
 
-container.appendChild(div);
-
-});
-
-}
-  function goHome(){
-window.location="teacher-home.html";
+    container.appendChild(div);
+  });
 }
 
-function goBack(){
-window.location="competitions.html";
-  }
+/* NAVIGATION */
+function goHome() {
+  window.location = "teacher-home.html";
+}
+
+function goBack() {
+  window.location = "competitions.html";
+}
 
 /* OPEN STAGE */
-function openStage(stageId){
-
-window.location=
-"teacher.html?stage_id="+stageId;
-
+function openStage(stageId) {
+  window.location = "teacher.html?stage_id=" + stageId;
 }
 
+/* INIT */
 loadCompetition();
 
 </script>

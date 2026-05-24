@@ -1,6 +1,7 @@
 
 
 let refreshing = false;
+let stages = [];
 /* ===============================
 LOAD ACTIVE STAGE
 =============================== */

@@ -12,6 +12,8 @@ export async function onRequest(context) {
   }
 
   const action = body.action;
+  const data=body;
+
 
   try {
 

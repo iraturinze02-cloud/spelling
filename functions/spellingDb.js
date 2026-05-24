@@ -1,5 +1,5 @@
-const { neon } = require("@neondatabase/serverless");
+import { neon } from "@neondatabase/serverless";
 
-const sql = neon(process.env.NEON_URL);
-
-module.exports = sql;
+export function getDb(env) {
+  return neon(env.NEON_URL);
+}

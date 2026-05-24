@@ -1,6 +1,32 @@
 
 
 let refreshing = false;
+/* ===============================
+LOAD ACTIVE STAGE
+=============================== */
+
+async function loadStages() {
+  try {
+
+    if (!competition) return;
+
+    const res = await fetch("/api", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "getActiveStage",
+        competition_id: competition.id
+      })
+    });
+
+    const data = await res.json();
+
+    stages = data.stages || [];
+
+  } catch (error) {
+    console.log(error);
+  }
+}
 
 /* ===============================
 LOAD LEADERBOARD

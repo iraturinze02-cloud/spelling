@@ -1,4 +1,4 @@
-<script>
+
 
 let refreshing = false;
 
@@ -179,5 +179,3 @@ INIT
 load();
 
 setInterval(autoRefresh, 10000);
-
-</script>

@@ -10,13 +10,14 @@ export async function onRequest(context) {
   } catch (e) {
     body = {};
   }
+  console.log("BODY RECEIVED:", body);
 
   const action = body.action;
   const data=body;
 
 
   try {
-    console.log("BODY RECEIVED:", body);
+    
 
     // =====================================================
     // LOGIN (YOU HAD SEPARATE FILE BEFORE)

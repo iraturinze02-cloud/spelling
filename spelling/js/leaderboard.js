@@ -67,7 +67,8 @@ competition_id:competition.id
 
 const data=
 await res.json();
-
+  
+console.log(data);
 /* FIX */
 
 if(data.stage){
@@ -160,6 +161,7 @@ stage_number
 
 const data=
 await res.json();
+  console.log(data);
 
 const leaderboard=
 data.leaderboard || [];
@@ -344,7 +346,8 @@ currentRound
 
 const data=
 await res.json();
-
+  
+console.log(data);
 if(!data.success){
 
 alert(

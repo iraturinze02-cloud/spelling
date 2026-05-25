@@ -573,6 +573,7 @@ window.onload = async()=>{
 
 await loadCompetition();
 await loadStage();
+await loadStudents(); 
 };
 
 /* =========================
@@ -611,7 +612,19 @@ document.getElementById("stageTitle")
 
 }
 
+async function loadStudents() {
 
+  const res = await api({
+    action: "getStudents",
+    competition_id: competition.id,
+    stage_number: stage.stage_number
+  });
+
+  students = res.students || [];
+
+  showStudent();
+  showWord();
+  }
 
 /* =========================
 SHOW STUDENT

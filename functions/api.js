@@ -393,7 +393,7 @@ SELECT *
 FROM competition_stages
 
 WHERE competition_id=
-${data.competition_id}
+${body.competition_id}
 
 AND status='active'
 
@@ -406,7 +406,7 @@ success:true,
 stage:stage[0] || null
 });
 }
-                            }
+                            
     // =====================================================
     // GET ACTIVE COMPETITION
     // =====================================================

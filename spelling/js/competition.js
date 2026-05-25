@@ -872,6 +872,114 @@ action:"resetState"
 location.reload();
 
 }
+// ==========================================
+// NAVIGATION
+// ==========================================
+
+function goHome(){
+
+window.location =
+"teacher-home.html";
+
+}
+
+function goLeaderboard(){
+
+window.location =
+"leaderboard.html";
+
+}
+
+// ==========================================
+// MUSIC
+// ==========================================
+
+let backgroundMusic =
+new Audio();
+
+function toggleMusicPanel(){
+
+const panel =
+document.getElementById(
+"musicPanel"
+);
+
+panel.style.display =
+panel.style.display === "block"
+? "none"
+: "block";
+
+}
+
+function playMusic(src){
+
+backgroundMusic.pause();
+
+backgroundMusic =
+new Audio(src);
+
+backgroundMusic.loop = true;
+
+backgroundMusic.play();
+
+}
+
+function stopMusic(){
+
+backgroundMusic.pause();
+
+}
+
+// ==========================================
+// SUBMIT VOTE
+// ==========================================
+
+async function submitVote(vote){
+
+try{
+
+const student =
+competitionState.currentStudent;
+
+if(!student)return;
+
+await api({
+
+action:"submitJudgeVote",
+
+competition_id:
+competitionState.competition.id,
+
+stage_number:
+competitionState.stage.stage_number,
+
+student_id:
+student.id,
+
+word:
+competitionState.currentWord,
+
+vote,
+
+judge_type:"teacher",
+
+used_time:
+competitionState.usedTime
+
+});
+
+updateTeacherStatus(
+`Vote submitted: ${vote}`
+);
+
+}
+catch(error){
+
+console.log(error);
+
+}
+
+}
 
 // ==========================================
 // AUTO START

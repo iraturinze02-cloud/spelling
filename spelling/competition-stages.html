@@ -241,8 +241,15 @@ async function activateStage(stageId) {
 
   alert(data.message || "Stage updated");
 
-  loadStages();
+  // 🔥 GET stage number first from backend result or reload
+  await loadStages();
+
+  const stage = stages.find(s => s.id === stageId);
+
+  if (stage) {
+    await ensureStageReady(stage.stage_number);
   }
+}
 /* NAVIGATION */
 function goHome() {
   window.location = "teacher-home.html";
@@ -253,9 +260,34 @@ function goBack() {
 }
 
 /* OPEN STAGE */
-function openStage(stageId) {
+async function openStage(stageId) {
+
+  await loadStages();
+
+  const stage = stages.find(s => s.id === stageId);
+
+  if (stage) {
+    await ensureStageReady(stage.stage_number);
+  }
+
   window.location = "teacher.html?stage_id=" + stageId;
 }
+  async function ensureStageReady(stageNumber) {
+
+  const res = await fetch("/api", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "ensureStageReady",
+      competition_id: competition.id,
+      stage_number: stageNumber
+    })
+  });
+
+  const data = await res.json();
+
+  console.log("Ensure stage ready:", data);
+    }
 
 /* INIT */
 loadCompetition();

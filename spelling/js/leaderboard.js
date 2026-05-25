@@ -4,7 +4,6 @@ let stages=[];
 
 let competition=null;
 
-
 /* ===============================
 LOAD ACTIVE COMPETITION
 =============================== */

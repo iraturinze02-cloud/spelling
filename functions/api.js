@@ -14,6 +14,9 @@ export async function onRequest(context) {
 
   const action = body.action;
   const data=body;
+  console.log("BODY:", body);
+console.log("ACTION:", action);
+
 
 
   try {
@@ -659,15 +662,22 @@ if (action === "getStudentsWithGroups") {
     // =====================================================
     // DEFAULT
     // =====================================================
-    return Response.json({
-      error: "Invalid action"
-    }, { status: 400 });
+    catch(error){
 
-  } catch (error) {
+console.log(
+"FAILED ACTION:",
+action
+);
 
-    return Response.json({
-      error: error.message
-    }, { status: 500 });
+console.log(
+"ERROR:",
+error
+);
 
-  }
-                         }
+return Response.json({
+success:false,
+action,
+error:error.message
+},{status:500});
+
+}                         }

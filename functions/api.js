@@ -401,19 +401,11 @@ LIMIT 1
 
 `;
 
-return{
-
-statusCode:200,
-
-body:JSON.stringify({
-
+return Response.json({
 success:true,
 stage:stage[0] || null
-
-})
-
-};
-
+});
+}
                             }
     // =====================================================
     // GET ACTIVE COMPETITION
@@ -609,7 +601,7 @@ if (action === "getStudentsWithGroups") {
         `;
       }
 
-      return json({
+      return response.json({
         success: true,
         next_round: nextRound,
         qualified: selected
@@ -633,7 +625,7 @@ if (action === "getStudentsWithGroups") {
       `;
 
       if (nextStage.length === 0) {
-        return json({ success: true, message: "Competition finished" });
+        return response.json({ success: true, message: "Competition finished" });
       }
 
       await sql`
@@ -654,14 +646,20 @@ if (action === "getStudentsWithGroups") {
         WHERE competition_id = ${competition_id}
       `;
 
-      return json({
+      return response.json({
         success: true,
         next_stage: nextStage[0]
       });
   }
+
     // =====================================================
     // DEFAULT
     // =====================================================
+      return Response.json({
+error:"Invalid action"
+},{status:400});
+
+}
     catch(error){
 
 console.log(

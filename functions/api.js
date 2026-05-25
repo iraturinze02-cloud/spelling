@@ -526,17 +526,14 @@ if (action === "getLeaderboard") {
   `;
 
   if (competition.length === 0) {
-    return Response.json({
-      success: true,
-      leaderboard: []
-    });
+    return Response.json({ success: true, leaderboard: [] });
   }
 
   const competition_id = competition[0].id;
 
   // 2. Get active stage
   const stage = await sql`
-    SELECT stage_number, qualifier_count
+    SELECT stage_number
     FROM competition_stages
     WHERE competition_id = ${competition_id}
       AND status = 'active'
@@ -544,58 +541,141 @@ if (action === "getLeaderboard") {
   `;
 
   if (stage.length === 0) {
-    return Response.json({
-      success: true,
-      leaderboard: []
-    });
+    return Response.json({ success: true, leaderboard: [] });
   }
 
   const active_stage = stage[0].stage_number;
-  const qualifier_count = stage[0].qualifier_count;
 
-  // 3. Get leaderboard (ONLY CURRENT STAGE + CURRENT COMPETITION)
+  // 3. Get leaderboard (STRICT stage control via progress table)
   const leaderboard = await sql`
     SELECT
       s.id,
       s.full_name,
       s.class_name,
-      COALESCE(SUM(w.score), 0) AS total_score,
 
-      -- check qualification status from DB
-      MAX(CASE 
-        WHEN sp.status = 'qualified' THEN 1 
-        ELSE 0 
-      END) AS is_qualified
+      COALESCE(SUM(
+        CASE 
+          WHEN w.stage_number = ${active_stage}
+          THEN w.score 
+          ELSE 0 
+        END
+      ), 0) AS total_score,
 
-    FROM students s
+      sp.status AS stage_status
+
+    FROM student_stage_progress sp
+
+    JOIN students s
+      ON s.id = sp.student_id
 
     LEFT JOIN word_attempts w
-      ON s.id = w.student_id
+      ON w.student_id = s.id
       AND w.competition_id = ${competition_id}
-      AND w.stage_number = ${active_stage}
 
-    LEFT JOIN student_stage_progress sp
-      ON sp.student_id = s.id
-      AND sp.competition_id = ${competition_id}
+    WHERE sp.competition_id = ${competition_id}
       AND sp.stage_number = ${active_stage}
+      AND sp.status = 'active'
 
-    WHERE s.competition_id = ${competition_id}
-      AND s.stage_number = ${active_stage}
-
-    GROUP BY s.id, s.full_name, s.class_name
+    GROUP BY s.id, s.full_name, s.class_name, sp.status
     ORDER BY total_score DESC
   `;
-
-  // 4. Auto-compute qualified list (for display only, NOT storing)
-  const qualified = leaderboard
-    .slice(0, qualifier_count)
-    .map(s => s.id);
 
   return Response.json({
     success: true,
     leaderboard,
-    qualified,
     active_stage
+  });
+}
+    if (action === "autoAdvanceStage") {
+
+  const { competition_id, current_stage_number } = body;
+
+  // 1. Get next stage
+  const nextStage = await sql`
+    SELECT *
+    FROM competition_stages
+    WHERE competition_id = ${competition_id}
+      AND stage_number > ${current_stage_number}
+    ORDER BY stage_number ASC
+    LIMIT 1
+  `;
+
+  if (nextStage.length === 0) {
+    return Response.json({ success: true, message: "Finished" });
+  }
+
+  const next_stage_number = nextStage[0].stage_number;
+
+  // 2. Get current stage leaderboard (TOP QUALIFIERS)
+  const leaderboard = await sql`
+    SELECT student_id, SUM(score) AS total_score
+    FROM word_attempts
+    WHERE competition_id = ${competition_id}
+      AND stage_number = ${current_stage_number}
+    GROUP BY student_id
+    ORDER BY total_score DESC
+  `;
+
+  // 3. Get rule
+  const rule = await sql`
+    SELECT qualifier_count
+    FROM competition_stages
+    WHERE competition_id = ${competition_id}
+      AND stage_number = ${current_stage_number}
+    LIMIT 1
+  `;
+
+  const limit = rule[0].qualifier_count;
+
+  let qualified = [];
+
+if (rule[0].qualification_rule === "top") {
+  qualified = leaderboard
+    .sort((a, b) => b.total_score - a.total_score)
+    .slice(0, limit);
+}
+
+if (rule[0].qualification_rule === "low") {
+  qualified = leaderboard
+    .sort((a, b) => a.total_score - b.total_score)
+    .slice(0, limit);
+}
+
+if (rule[0].qualification_rule === "random") {
+  qualified = leaderboard
+    .sort(() => Math.random() - 0.5)
+    .slice(0, limit);
+    }
+  // 4. Mark current stage finished
+  await sql`
+    UPDATE student_stage_progress
+    SET status = 'eliminated'
+    WHERE competition_id = ${competition_id}
+      AND stage_number = ${current_stage_number}
+  `;
+
+  // 5. Insert ONLY qualified into next stage
+  for (const s of qualified) {
+    await sql`
+      INSERT INTO student_stage_progress (
+        student_id,
+        competition_id,
+        stage_number,
+        status
+      )
+      VALUES (
+        ${s.student_id},
+        ${competition_id},
+        ${next_stage_number},
+        'active'
+      )
+    `;
+  }
+
+  return Response.json({
+    success: true,
+    next_stage: next_stage_number,
+    qualified
   });
 }
 

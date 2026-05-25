@@ -274,20 +274,31 @@ if (existing.length === 0 && activeStage.stage_number == 1){
     // =====================================================
     if (action === "getStudents") {
 
-      const students = await sql`
-        SELECT *
-        FROM students
-        WHERE competition_id=${body.competition_id}
-        AND stage_number=${body.stage_number}
-        ORDER BY full_name ASC
-      `;
+  const students = await sql`
 
-      return Response.json({
-        success: true,
-        students
-      });
+    SELECT
+      s.*,
+      sp.stage_number,
+      sp.status
+
+    FROM student_stage_progress sp
+
+    JOIN students s
+      ON s.id = sp.student_id
+
+    WHERE sp.competition_id=${body.competition_id}
+      AND sp.stage_number=${body.stage_number}
+      AND sp.status='active'
+
+    ORDER BY s.full_name ASC
+
+  `;
+
+  return Response.json({
+    success:true,
+    students
+  });
     }
-
     // =====================================================
     // ADD STUDENT
     // =====================================================

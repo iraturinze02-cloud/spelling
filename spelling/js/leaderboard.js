@@ -1,8 +1,9 @@
-
-
 let refreshing=false;
+
 let stages=[];
+
 let competition=null;
+
 
 /* ===============================
 LOAD ACTIVE COMPETITION
@@ -42,16 +43,19 @@ data.competition || null;
 
 if(!competition){
 
-console.log(
-"No competition"
-);
+document.getElementById(
+"title"
+).innerText=
+"No Active Competition";
 
 return;
 }
 
 localStorage.setItem(
+
 "competition_id",
 competition.id
+
 );
 
 await loadStages();
@@ -81,35 +85,47 @@ if(!competition)return;
 
 const res=
 await fetch("/api",{
+
 method:"POST",
+
 headers:{
 "Content-Type":"application/json"
 },
+
 body:JSON.stringify({
+
 action:"getActiveStage",
-competition_id:localStorage.getItem("competition_id")
+
+competition_id:
+localStorage.getItem(
+"competition_id"
+)
+
 })
-})
-.then(r=>r.json())
-.then(data=>console.log(data))
-.catch(err=>console.log(err));
+
+});
 
 const data=
 await res.json();
-  
-console.log(data);
-/* FIX */
+
+console.log(
+"Stage:",
+data
+);
 
 if(data.stage){
 
 stages=[data.stage];
 
 localStorage.setItem(
+
 "active_stage",
 data.stage.stage_number
+
 );
 
-}else{
+}
+else{
 
 stages=[];
 
@@ -118,7 +134,10 @@ stages=[];
 }
 catch(error){
 
-console.log(error);
+console.log(
+"Stage error:",
+error
+);
 
 }
 
@@ -142,7 +161,8 @@ const activeStage=
 stages[0];
 
 if(
-!competition_id ||
+!competition_id
+||
 !activeStage
 ){
 
@@ -159,9 +179,6 @@ document.getElementById(
 return;
 
 }
-
-
-/* FIX */
 
 const stage_number=
 activeStage.stage_number;
@@ -190,7 +207,11 @@ stage_number
 
 const data=
 await res.json();
-  console.log(data);
+
+console.log(
+"Leaderboard:",
+data
+);
 
 const leaderboard=
 data.leaderboard || [];
@@ -202,10 +223,12 @@ document.getElementById(
 "title"
 ).innerText=
 
-"YOUNG SPELLERS - Stage "
-+
-stage_number
-+
+competition.competition_name+
+
+" - Stage "+
+
+stage_number+
+
 " Ranking";
 
 
@@ -219,7 +242,17 @@ document.getElementById(
 "list"
 ).innerHTML=
 
-"<tr><td colspan='4'>No results yet</td></tr>";
+`
+<tr>
+
+<td colspan="4">
+
+No results yet
+
+</td>
+
+</tr>
+`;
 
 return;
 
@@ -233,7 +266,9 @@ let html="";
 leaderboard.forEach((s,i)=>{
 
 let cls="";
+
 let rank=i+1;
+
 
 if(i===0){
 
@@ -241,18 +276,21 @@ cls="top1";
 rank="🥇";
 
 }
+
 else if(i===1){
 
 cls="top2";
 rank="🥈";
 
 }
+
 else if(i===2){
 
 cls="top3";
 rank="🥉";
 
 }
+
 
 html+=`
 
@@ -272,7 +310,7 @@ ${s.full_name}
 
 <td>
 
-${s.class_name}
+${s.class_name || "-"}
 
 </td>
 
@@ -288,6 +326,7 @@ ${s.total_score}
 
 });
 
+
 document.getElementById(
 "list"
 ).innerHTML=
@@ -297,7 +336,7 @@ html;
 catch(error){
 
 console.log(
-"Load error:",
+"Leaderboard error:",
 error
 );
 
@@ -323,7 +362,8 @@ const activeStage=
 stages[0];
 
 if(
-!competition_id ||
+!competition_id
+||
 !activeStage
 ){
 
@@ -338,71 +378,38 @@ return;
 const currentStage=
 activeStage.stage_number;
 
-const currentRound=
+const stageRounds=
+activeStage.total_rounds;
+
+let currentRound=
 parseInt(
 
 localStorage.getItem(
 "currentRound"
-)||1
+)
 
-);
-
-
-const res=
-await fetch("/api",{
-
-method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify({
-
-action:"qualifyNextRound",
-
-competition_id,
-
-stage_number:
-currentStage,
-
-round_number:
-currentRound
-
-})
-
-});
-
-const data=
-await res.json();
-  
-console.log(data);
-if(!data.success){
-
-alert(
-data.message ||
-"Failed"
-);
-
-return;
-
-}
+)||1;
 
 
-const newRound=
-currentRound+1;
+currentRound++;
 
 localStorage.setItem(
 
 "currentRound",
-
-newRound
+currentRound
 
 );
 
 
-/* AUTO STAGE ADVANCE */
+/* ONLY ADVANCE STAGE
+AFTER FINAL ROUND */
 
+if(
+currentRound>
+stageRounds
+){
+
+const res=
 await fetch("/api",{
 
 method:"POST",
@@ -424,23 +431,43 @@ currentStage
 
 });
 
+const data=
+await res.json();
+
+console.log(
+"Advance:",
+data
+);
+
+if(data.next_stage){
+
+localStorage.setItem(
+
+"currentRound",
+1
+
+);
+
+alert(
+
+"Moved to "+
+data.next_stage.stage_name
+
+);
+
+}
 
 await loadStages();
 
-await load();
+}
 
-alert(
-"Round "
-+
-newRound
-+
-" started"
-);
+await load();
 
 }
 catch(error){
 
 console.log(
+"Next round error:",
 error
 );
 
@@ -455,7 +482,11 @@ AUTO REFRESH
 
 async function autoRefresh(){
 
-if(refreshing)return;
+if(refreshing){
+
+return;
+
+}
 
 refreshing=true;
 
@@ -494,10 +525,16 @@ await load();
 }
 
 }
+
 init();
+
+
+/* LIVE UPDATE */
+
 setInterval(
+
 autoRefresh,
-40000
+
+3000
+
 );
-
-

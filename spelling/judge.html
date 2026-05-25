@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport"
+content="width=device-width,initial-scale=1.0">
+
+<title>Judge Panel</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+font-family:Arial,sans-serif;
+background:#eef2ff;
+color:#111827;
+}
+
+.header{
+background:linear-gradient(135deg,#1e3a8a,#2563eb);
+padding:20px;
+color:white;
+display:flex;
+justify-content:space-between;
+align-items:center;
+flex-wrap:wrap;
+gap:10px;
+}
+
+.header h1{
+font-size:28px;
+}
+
+.header p{
+margin-top:5px;
+font-size:14px;
+opacity:.9;
+}
+
+.logout{
+background:white;
+color:#1e3a8a;
+border:none;
+padding:10px 18px;
+border-radius:10px;
+cursor:pointer;
+font-weight:bold;
+}
+
+.container{
+max-width:1200px;
+margin:auto;
+padding:20px;
+}
+
+.top-grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:15px;
+margin-bottom:20px;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:18px;
+box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+
+.label{
+font-size:14px;
+color:#6b7280;
+margin-bottom:10px;
+}
+
+.value{
+font-size:28px;
+font-weight:bold;
+color:#1e3a8a;
+}
+
+.center-panel{
+background:white;
+padding:30px;
+border-radius:20px;
+box-shadow:0 4px 12px rgba(0,0,0,.08);
+text-align:center;
+margin-bottom:20px;
+}
+
+.stage{
+font-size:18px;
+font-weight:bold;
+color:#2563eb;
+margin-bottom:10px;
+}
+
+.word{
+font-size:54px;
+font-weight:bold;
+margin:20px 0;
+color:#1e3a8a;
+word-break:break-word;
+}
+
+.timer{
+font-size:70px;
+font-weight:bold;
+color:#dc2626;
+margin-bottom:15px;
+}
+
+.status{
+display:inline-block;
+padding:12px 20px;
+border-radius:12px;
+background:#dbeafe;
+color:#1d4ed8;
+font-weight:bold;
+font-size:16px;
+}
+
+.vote-panel{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+gap:15px;
+margin-top:25px;
+}
+
+.vote-btn{
+padding:22px;
+border:none;
+border-radius:16px;
+font-size:20px;
+font-weight:bold;
+cursor:pointer;
+color:white;
+transition:.2s;
+}
+
+.vote-btn:hover{
+transform:translateY(-2px);
+}
+
+.vote-btn:disabled{
+opacity:.5;
+cursor:not-allowed;
+}
+
+.correct{
+background:#16a34a;
+}
+
+.wrong{
+background:#dc2626;
+}
+
+.notspelt{
+background:#f59e0b;
+}
+
+.bottom{
+margin-top:20px;
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+gap:20px;
+}
+
+.vote-box{
+background:white;
+padding:20px;
+border-radius:18px;
+box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+
+.vote-title{
+font-size:18px;
+font-weight:bold;
+margin-bottom:15px;
+color:#1e3a8a;
+}
+
+.vote-row{
+display:flex;
+justify-content:space-between;
+padding:12px 0;
+border-bottom:1px solid #e5e7eb;
+}
+
+.footer{
+text-align:center;
+margin-top:30px;
+color:#6b7280;
+font-size:14px;
+}
+
+@media(max-width:768px){
+
+.word{
+font-size:36px;
+}
+
+.timer{
+font-size:54px;
+}
+
+.vote-btn{
+font-size:18px;
+padding:18px;
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+
+<div>
+
+<h1>
+Judge Dashboard
+</h1>
+
+<p id="competitionName">
+Loading Competition...
+</p>
+
+</div>
+
+<button class="logout"
+onclick="logout()">
+
+Logout
+
+</button>
+
+</div>
+
+<div class="container">
+
+<!-- TOP INFO -->
+<div class="top-grid">
+
+<div class="card">
+
+<div class="label">
+Participant
+</div>
+
+<div class="value"
+id="studentName">
+
+Loading...
+
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="label">
+Round
+</div>
+
+<div class="value"
+id="roundInfo">
+
+1/3
+
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="label">
+Word Number
+</div>
+
+<div class="value"
+id="wordIndex">
+
+1
+
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="label">
+Judge Votes Received
+</div>
+
+<div class="value"
+id="voteCount">
+
+0
+
+</div>
+
+</div>
+
+</div>
+
+<!-- CENTER -->
+<div class="center-panel">
+
+<div class="stage"
+id="stageName">
+
+Stage Loading...
+
+</div>
+
+<div class="word"
+id="word">
+
+READY
+
+</div>
+
+<div class="timer"
+id="timer">
+
+0
+
+</div>
+
+<div class="status"
+id="status">
+
+Waiting Teacher Action
+
+</div>
+
+<div class="vote-panel">
+
+<button
+class="vote-btn correct"
+id="correctBtn"
+disabled
+onclick="submitVote('correct')">
+
+✔ CORRECT
+
+</button>
+
+<button
+class="vote-btn wrong"
+id="wrongBtn"
+disabled
+onclick="submitVote('wrong')">
+
+✖ WRONG
+
+</button>
+
+<button
+class="vote-btn notspelt"
+id="notspeltBtn"
+disabled
+onclick="submitVote('notspelt')">
+
+⏱ NOT SPELT
+
+</button>
+
+</div>
+
+</div>
+
+<!-- BOTTOM -->
+<div class="bottom">
+
+<div class="vote-box">
+
+<div class="vote-title">
+Your Current Vote
+</div>
+
+<div class="vote-row">
+
+<span>
+Vote Status
+</span>
+
+<strong id="myVote">
+No vote submitted
+</strong>
+
+</div>
+
+<div class="vote-row">
+
+<span>
+Time Submitted
+</span>
+
+<strong id="voteTime">
+--
+</strong>
+
+</div>
+
+</div>
+
+<div class="vote-box">
+
+<div class="vote-title">
+Realtime Competition State
+</div>
+
+<div class="vote-row">
+
+<span>
+Timer State
+</span>
+
+<strong id="timerState">
+Stopped
+</strong>
+
+</div>
+
+<div class="vote-row">
+
+<span>
+Voting State
+</span>
+
+<strong id="votingState">
+Disabled
+</strong>
+
+</div>
+
+<div class="vote-row">
+
+<span>
+Teacher Status
+</span>
+
+<strong id="teacherState">
+Waiting
+</strong>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="footer">
+
+Judge votes are realtime and synchronized with the teacher control panel.
+
+</div>
+
+</div>
+
+<script>
+
+// ========================================
+// API HELPER
+// ========================================
+
+async function api(data){
+
+const res = await fetch("/api",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify(data)
+});
+
+return await res.json();
+
+}
+
+// ========================================
+// GLOBALS
+// ========================================
+
+let competition = null;
+let stage = null;
+let currentState = null;
+let judgeVoteSubmitted = false;
+
+// ========================================
+// INIT
+// ========================================
+
+window.onload = async()=>{
+
+await loadCompetition();
+await loadStage();
+
+syncRealtime();
+
+setInterval(syncRealtime,1000);
+
+};
+
+// ========================================
+// LOAD COMPETITION
+// ========================================
+
+async function loadCompetition(){
+
+const res = await api({
+action:"getActiveCompetition"
+});
+
+competition = res.competition;
+
+document.getElementById("competitionName")
+.innerText =
+competition.competition_name;
+
+}
+
+// ========================================
+// LOAD STAGE
+// ========================================
+
+async function loadStage(){
+
+const res = await api({
+action:"getActiveStage",
+competition_id:competition.id
+});
+
+stage = res.stage;
+
+document.getElementById("stageName")
+.innerText =
+`Stage ${stage.stage_number} • ${stage.stage_name}`;
+
+}
+
+// ========================================
+// REALTIME SYNC
+// ========================================
+
+async function syncRealtime(){
+
+const res = await api({
+action:"getCompetitionRealtime",
+competition_id:competition.id
+});
+
+if(!res)return;
+
+currentState = res;
+
+updateUI();
+
+}
+
+// ========================================
+// UPDATE UI
+// ========================================
+
+function updateUI(){
+
+document.getElementById("studentName")
+.innerText =
+currentState.student?.full_name || "Waiting";
+
+document.getElementById("roundInfo")
+.innerText =
+`${currentState.round}/${stage.total_rounds}`;
+
+document.getElementById("word")
+.innerText =
+currentState.word || "READY";
+
+document.getElementById("timer")
+.innerText =
+currentState.time_left || 0;
+
+document.getElementById("wordIndex")
+.innerText =
+(currentState.word_index || 0) + 1;
+
+document.getElementById("voteCount")
+.innerText =
+currentState.vote_count || 0;
+
+document.getElementById("teacherState")
+.innerText =
+currentState.started
+? "Timer Running"
+: "Waiting Votes";
+
+document.getElementById("timerState")
+.innerText =
+currentState.started
+? "Running"
+: "Stopped";
+
+if(currentState.started){
+
+disableVoting();
+
+document.getElementById("status")
+.innerText =
+"Teacher Timer Running";
+
+document.getElementById("votingState")
+.innerText =
+"Disabled";
+
+}else{
+
+enableVoting();
+
+document.getElementById("status")
+.innerText =
+"Voting Open";
+
+document.getElementById("votingState")
+.innerText =
+"Enabled";
+
+}
+
+}
+
+// ========================================
+// ENABLE VOTING
+// ========================================
+
+function enableVoting(){
+
+if(judgeVoteSubmitted)return;
+
+document.getElementById("correctBtn")
+.disabled = false;
+
+document.getElementById("wrongBtn")
+.disabled = false;
+
+document.getElementById("notspeltBtn")
+.disabled = false;
+
+}
+
+// ========================================
+// DISABLE VOTING
+// ========================================
+
+function disableVoting(){
+
+document.getElementById("correctBtn")
+.disabled = true;
+
+document.getElementById("wrongBtn")
+.disabled = true;
+
+document.getElementById("notspeltBtn")
+.disabled = true;
+
+}
+
+// ========================================
+// SUBMIT VOTE
+// ========================================
+
+async function submitVote(vote){
+
+if(judgeVoteSubmitted)return;
+
+const result = await api({
+
+action:"submitJudgeVote",
+
+competition_id:competition.id,
+
+stage_number:stage.stage_number,
+
+student_id:currentState.student.id,
+
+word:currentState.word,
+
+vote
+
+});
+
+if(result?.success){
+
+judgeVoteSubmitted = true;
+
+disableVoting();
+
+document.getElementById("myVote")
+.innerText = vote.toUpperCase();
+
+document.getElementById("voteTime")
+.innerText =
+new Date().toLocaleTimeString();
+
+document.getElementById("status")
+.innerText =
+"Vote Submitted Successfully";
+
+}
+
+}
+
+// ========================================
+// RESET LOCAL VOTE
+// ========================================
+
+function resetVoteState(){
+
+judgeVoteSubmitted = false;
+
+document.getElementById("myVote")
+.innerText = "No vote submitted";
+
+document.getElementById("voteTime")
+.innerText = "--";
+
+}
+
+// ========================================
+// AUTO RESET WHEN WORD CHANGES
+// ========================================
+
+let lastWord = "";
+
+setInterval(()=>{
+
+const currentWord =
+document.getElementById("word").innerText;
+
+if(currentWord !== lastWord){
+
+lastWord = currentWord;
+
+resetVoteState();
+
+}
+
+},500);
+
+// ========================================
+// LOGOUT
+// ========================================
+
+function logout(){
+
+window.location = "index.html";
+
+}
+
+</script>
+
+</body>
+  </html>

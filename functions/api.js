@@ -380,24 +380,38 @@ if (existing.length === 0 && activeStage.stage_number == 1){
       return Response.json({ success: true });
     }
 
-    // =====================================================
-    // RESET COMPETITION STATE
-    // =====================================================
-    if (action === "resetState") {
+// =====================================================
+// RESET STATE
+// =====================================================
 
-      await sql`
-        UPDATE competition_state
-        SET
-          currentstudent=0,
-          currentwordindex=0,
-          round=1,
-          score=0,
-          timeleft=0
-        WHERE id=1
-      `;
+if(action==="resetState"){
 
-      return Response.json({ success: true });
-    }
+await sql`
+
+UPDATE competition_state
+
+SET
+
+current_student_index=0,
+current_round=1,
+current_word_index=0,
+time_left=0,
+started=false,
+score=0,
+participant_done=false,
+voting_open=false,
+finalized=false,
+competition_status='Waiting To Start'
+
+WHERE competition_id=${body.competition_id}
+
+`;
+
+return Response.json({
+success:true
+});
+
+}
 
     /* =====================
 GET ACTIVE STAGE
@@ -825,6 +839,181 @@ if (action === "ensureStageReady") {
     qualified_count: qualified.length
   });
   }
+    // =====================================================
+// SAVE JUDGE VOTE
+// =====================================================
+
+if(action==="saveJudgeVote"){
+
+await sql`
+
+INSERT INTO judge_votes(
+
+competition_id,
+stage_number,
+student_id,
+round_number,
+word,
+judge_id,
+vote
+
+)
+
+VALUES(
+
+${body.competition_id},
+${body.stage_number},
+${body.student_id},
+${body.round_number},
+${body.word},
+${body.judge_id},
+${body.vote}
+
+)
+
+`;
+
+return Response.json({
+success:true
+});
+
+}
+
+// =====================================================
+// GET WORD VOTES
+// =====================================================
+
+if(action==="getWordVotes"){
+
+const votes = await sql`
+
+SELECT *
+
+FROM judge_votes
+
+WHERE competition_id=${body.competition_id}
+
+AND stage_number=${body.stage_number}
+
+AND student_id=${body.student_id}
+
+AND round_number=${body.round_number}
+
+AND word=${body.word}
+
+ORDER BY created_at ASC
+
+`;
+
+return Response.json({
+success:true,
+votes
+});
+
+}
+
+// =====================================================
+// CLEAR WORD VOTES
+// =====================================================
+
+if(action==="clearVotes"){
+
+await sql`
+
+DELETE FROM judge_votes
+
+WHERE competition_id=${body.competition_id}
+
+AND stage_number=${body.stage_number}
+
+AND student_id=${body.student_id}
+
+AND round_number=${body.round_number}
+
+AND word=${body.word}
+
+`;
+
+return Response.json({
+success:true
+});
+
+}
+
+// =====================================================
+// OPEN VOTING
+// =====================================================
+
+if(action==="openVoting"){
+
+await sql`
+
+UPDATE competition_state
+
+SET
+
+voting_open=true,
+competition_status='Waiting For Judges Votes'
+
+WHERE competition_id=${body.competition_id}
+
+`;
+
+return Response.json({
+success:true
+});
+
+}
+
+// =====================================================
+// CLOSE VOTING
+// =====================================================
+
+if(action==="closeVoting"){
+
+await sql`
+
+UPDATE competition_state
+
+SET
+
+voting_open=false,
+finalized=true
+
+WHERE competition_id=${body.competition_id}
+
+`;
+
+return Response.json({
+success:true
+});
+
+}
+
+// =====================================================
+// GET COMPETITION STATE
+// =====================================================
+
+if(action==="getCompetitionState"){
+
+const state = await sql`
+
+SELECT *
+
+FROM competition_state
+
+WHERE competition_id=${body.competition_id}
+
+LIMIT 1
+
+`;
+
+return Response.json({
+success:true,
+state:state[0] || null
+});
+
+   }
 
     // =====================================================
     // DEFAULT

@@ -114,7 +114,7 @@ if (action === "activateStage") {
   `;
 
   // ❗initialize Stage (or empty system)
-if (existing.length === 0) {
+if (existing.length === 0 && activeStage.stage_number == 1){
 
     const students = await sql`
       SELECT id

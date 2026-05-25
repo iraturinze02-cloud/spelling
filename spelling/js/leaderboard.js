@@ -534,6 +534,6 @@ setInterval(
 
 autoRefresh,
 
-3000
+146000000000000
 
 );

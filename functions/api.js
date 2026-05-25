@@ -129,29 +129,68 @@ console.log("ACTION:", action);
       return Response.json({ competitions: result });
     }
 
-    // =====================================================
-    // ACTIVATE COMPETITION
-    // =====================================================
-    if (action === "activateCompetition") {
+// =====================================================
+// ACTIVATE STAGE
+// =====================================================
+if (action === "activateStage") {
+
+  // deactivate all stages
+  await sql`
+    UPDATE competition_stages
+    SET status='inactive'
+  `;
+
+  // activate selected stage
+  const stage = await sql`
+    UPDATE competition_stages
+    SET status='active'
+    WHERE id=${body.stage_id}
+    RETURNING *
+  `;
+
+  const activeStage = stage[0];
+
+  // check if stage already has learners
+  const existing = await sql`
+    SELECT id
+    FROM student_stage_progress
+    WHERE competition_id=${activeStage.competition_id}
+    AND stage_number=${activeStage.stage_number}
+    LIMIT 1
+  `;
+
+  // if no learners exist, initialize them
+  if (existing.length === 0) {
+
+    const students = await sql`
+      SELECT id
+      FROM students
+      WHERE competition_id=${activeStage.competition_id}
+    `;
+
+    for (const student of students) {
 
       await sql`
-        UPDATE competitions
-        SET status='inactive'
-        WHERE status='active'
+        INSERT INTO student_stage_progress(
+          student_id,
+          competition_id,
+          stage_number,
+          status
+        )
+        VALUES(
+          ${student.id},
+          ${activeStage.competition_id},
+          ${activeStage.stage_number},
+          'active'
+        )
       `;
-
-      const result = await sql`
-        UPDATE competitions
-        SET status='active'
-        WHERE id=${body.competition_id}
-        RETURNING *
-      `;
-
-      return Response.json({
-        success: true,
-        competition: result[0]
-      });
     }
+  }
+
+  return Response.json({
+    success:true
+  });
+}
 
     // =====================================================
     // DELETE COMPETITION

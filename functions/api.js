@@ -512,8 +512,12 @@ if (action === "getStudentsWithGroups") {
     }
 
 
+// =====================================================
+// GET LEADERBOARD (DB-DRIVEN QUALIFICATION SYSTEM)
+// =====================================================
 if (action === "getLeaderboard") {
 
+  // 1. Get active competition
   const competition = await sql`
     SELECT id
     FROM competitions
@@ -522,13 +526,17 @@ if (action === "getLeaderboard") {
   `;
 
   if (competition.length === 0) {
-    return Response.json({ success: true, leaderboard: [] });
+    return Response.json({
+      success: true,
+      leaderboard: []
+    });
   }
 
   const competition_id = competition[0].id;
 
+  // 2. Get active stage
   const stage = await sql`
-    SELECT stage_number
+    SELECT stage_number, qualifier_count
     FROM competition_stages
     WHERE competition_id = ${competition_id}
       AND status = 'active'
@@ -536,31 +544,52 @@ if (action === "getLeaderboard") {
   `;
 
   if (stage.length === 0) {
-    return Response.json({ success: true, leaderboard: [] });
+    return Response.json({
+      success: true,
+      leaderboard: []
+    });
   }
 
   const active_stage = stage[0].stage_number;
+  const qualifier_count = stage[0].qualifier_count;
 
-  // LIVE SCORES
+  // 3. Get leaderboard (ONLY CURRENT STAGE + CURRENT COMPETITION)
   const leaderboard = await sql`
     SELECT
       s.id,
       s.full_name,
       s.class_name,
-      COALESCE(SUM(w.score), 0) AS total_score
+      COALESCE(SUM(w.score), 0) AS total_score,
+
+      -- check qualification status from DB
+      MAX(CASE 
+        WHEN sp.status = 'qualified' THEN 1 
+        ELSE 0 
+      END) AS is_qualified
+
     FROM students s
-    LEFT JOIN word_attempts w 
+
+    LEFT JOIN word_attempts w
       ON s.id = w.student_id
+      AND w.competition_id = ${competition_id}
       AND w.stage_number = ${active_stage}
+
+    LEFT JOIN student_stage_progress sp
+      ON sp.student_id = s.id
+      AND sp.competition_id = ${competition_id}
+      AND sp.stage_number = ${active_stage}
+
     WHERE s.competition_id = ${competition_id}
+      AND s.stage_number = ${active_stage}
+
     GROUP BY s.id, s.full_name, s.class_name
     ORDER BY total_score DESC
   `;
 
-  // AUTO QUALIFICATION LOGIC (TOP N)
-  const qualifier_count = 5;
-
-  const qualified = leaderboard.slice(0, qualifier_count);
+  // 4. Auto-compute qualified list (for display only, NOT storing)
+  const qualified = leaderboard
+    .slice(0, qualifier_count)
+    .map(s => s.id);
 
   return Response.json({
     success: true,
@@ -568,7 +597,7 @@ if (action === "getLeaderboard") {
     qualified,
     active_stage
   });
-    }
+}
 
     // =====================================================
     // DEFAULT

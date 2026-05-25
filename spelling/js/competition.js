@@ -524,6 +524,7 @@ competitionState.stage.stage_number,
 
 student_id:
 student.id,
+round_number: competitionState.currentRound
 
 word:
 competitionState.currentWord,

@@ -498,5 +498,9 @@ await load();
 
 }
 init();
+setInterval(
+autoRefresh,
+40000
+);
 
 

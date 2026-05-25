@@ -113,8 +113,8 @@ if (action === "activateStage") {
     LIMIT 1
   `;
 
-  // ❗ ONLY initialize Stage 1 (or empty system)
-  if (existing.length === 0 && activeStage.stage_number == 1) {
+  // ❗initialize Stage (or empty system)
+if (existing.length === 0) {
 
     const students = await sql`
       SELECT id

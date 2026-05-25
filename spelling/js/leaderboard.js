@@ -81,21 +81,18 @@ if(!competition)return;
 
 const res=
 await fetch("/api",{
-
 method:"POST",
-
 headers:{
 "Content-Type":"application/json"
 },
-
 body:JSON.stringify({
-
 action:"getActiveStage",
-competition_id:competition.id
-
+competition_id:localStorage.getItem("competition_id")
 })
-
-});
+})
+.then(r=>r.json())
+.then(data=>console.log(data))
+.catch(err=>console.log(err));
 
 const data=
 await res.json();

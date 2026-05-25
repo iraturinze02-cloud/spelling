@@ -718,6 +718,113 @@ if (rule[0].qualification_rule === "random") {
     qualified
   });
 }
+    // =====================================================
+// ENSURE STAGE READY (LIVE QUALIFICATION ENGINE)
+// =====================================================
+if (action === "ensureStageReady") {
+
+  const { competition_id, stage_number } = body;
+
+  // 1. check if stage already initialized (prevents duplicates)
+  const existing = await sql`
+    SELECT 1
+    FROM student_stage_progress
+    WHERE competition_id = ${competition_id}
+      AND stage_number = ${stage_number}
+    LIMIT 1
+  `;
+
+  if (existing.length > 0) {
+    return Response.json({
+      success: true,
+      message: "Stage already ready"
+    });
+  }
+
+  // 2. get qualification rule for PREVIOUS stage
+  const prevStage = stage_number - 1;
+
+  const rule = await sql`
+    SELECT qualifier_count, qualification_rule
+    FROM competition_stages
+    WHERE competition_id = ${competition_id}
+      AND stage_number = ${prevStage}
+    LIMIT 1
+  `;
+
+  // if no previous stage (stage 1 case) → allow all students
+  let qualification_rule = rule[0]?.qualification_rule || "all";
+  let limit = rule[0]?.qualifier_count || 0;
+
+  // 3. get previous stage leaderboard
+  const leaderboard = await sql`
+    SELECT 
+      student_id,
+      SUM(score) AS total_score
+    FROM word_attempts
+    WHERE competition_id = ${competition_id}
+      AND stage_number = ${prevStage}
+    GROUP BY student_id
+    ORDER BY total_score DESC
+  `;
+
+  // 4. apply qualification rule
+  let qualified = [];
+
+  if (qualification_rule === "top") {
+    qualified = leaderboard.slice(0, limit);
+  }
+
+  if (qualification_rule === "low") {
+    qualified = leaderboard.slice(-limit);
+  }
+
+  if (qualification_rule === "random") {
+    qualified = leaderboard.sort(() => Math.random() - 0.5).slice(0, limit);
+  }
+
+  if (qualification_rule === "all") {
+    qualified = leaderboard;
+  }
+
+  // 5. fallback: if stage 1 or no data → include all students
+  if (prevStage < 1 || leaderboard.length === 0) {
+
+    const allStudents = await sql`
+      SELECT id AS student_id
+      FROM students
+      WHERE competition_id = ${competition_id}
+    `;
+
+    qualified = allStudents;
+  }
+
+  // 6. insert qualified students into progress table (NO DUPLICATES)
+  for (const s of qualified) {
+
+    await sql`
+      INSERT INTO student_stage_progress (
+        student_id,
+        competition_id,
+        stage_number,
+        status
+      )
+      VALUES (
+        ${s.student_id},
+        ${competition_id},
+        ${stage_number},
+        'active'
+      )
+      ON CONFLICT DO NOTHING
+    `;
+  }
+
+  return Response.json({
+    success: true,
+    stage_number,
+    qualified_count: qualified.length
+  });
+  }
 
     // =====================================================
     // DEFAULT

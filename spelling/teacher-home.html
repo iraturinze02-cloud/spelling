@@ -1,277 +1,291 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 
-<meta name="viewport"
-content="width=device-width,initial-scale=1">
+<title>Teacher Control Panel</title>
 
-<title>Teacher Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
 
 <style>
 
 *{
+margin:0;
+padding:0;
 box-sizing:border-box;
-font-family:Arial,sans-serif;
 }
 
 body{
-margin:0;
-background:#f3f4f6;
+font-family:Arial,sans-serif;
+background:#eef2ff;
 color:#111827;
 }
 
-/* HEADER */
-
 .header{
-
-background:linear-gradient(
-135deg,
-#1d4ed8,
-#2563eb
-);
-
+background:linear-gradient(135deg,#1e3a8a,#2563eb);
 color:white;
-
-padding:20px;
-
+padding:18px;
 display:flex;
-
 justify-content:space-between;
-
 align-items:center;
-
 flex-wrap:wrap;
-
+gap:10px;
+box-shadow:0 2px 10px rgba(0,0,0,.2);
 }
 
 .header-left h1{
-
-margin:0;
-font-size:30px;
-
+font-size:28px;
 }
 
 .header-left p{
-
-margin:5px 0 0;
+font-size:14px;
 opacity:.9;
-
+margin-top:4px;
 }
 
-.logout{
+.header-right{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+}
 
-background:#dc2626;
+.header-btn{
+background:white;
+color:#1e3a8a;
 border:none;
-color:white;
-
-padding:12px 18px;
-
+padding:10px 16px;
 border-radius:10px;
-
-font-weight:bold;
-
 cursor:pointer;
-
+font-weight:bold;
 }
-
-/* CONTAINER */
 
 .container{
-
-padding:25px;
-max-width:1300px;
+max-width:1400px;
 margin:auto;
-
+padding:20px;
 }
-
-/* TOP INFO */
 
 .top-grid{
-
 display:grid;
-
-grid-template-columns:
-repeat(auto-fit,minmax(250px,1fr));
-
-gap:20px;
-
-margin-bottom:30px;
-
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:15px;
+margin-bottom:20px;
 }
-
-.info-card{
-
-background:white;
-
-padding:25px;
-
-border-radius:18px;
-
-box-shadow:
-0 4px 15px rgba(0,0,0,.08);
-
-}
-
-.info-title{
-
-font-size:16px;
-color:#6b7280;
-
-}
-
-.info-value{
-
-font-size:34px;
-font-weight:bold;
-
-margin-top:10px;
-
-}
-
-/* MAIN GRID */
-
-.grid{
-
-display:grid;
-
-grid-template-columns:
-repeat(auto-fit,minmax(260px,1fr));
-
-gap:20px;
-
-}
-
-/* CARDS */
 
 .card{
-
 background:white;
-
-padding:25px;
-
-border-radius:18px;
-
-text-align:center;
-
-box-shadow:
-0 4px 15px rgba(0,0,0,.08);
-
-transition:.3s;
-
+padding:20px;
+border-radius:16px;
+box-shadow:0 4px 12px rgba(0,0,0,.08);
 }
 
-.card:hover{
-
-transform:translateY(-4px);
-
-}
-
-.icon{
-
-font-size:55px;
-
-margin-bottom:15px;
-
-}
-
-.card h2{
-
-margin:10px 0;
-font-size:24px;
-
-}
-
-.card p{
-
+.card-title{
+font-size:14px;
 color:#6b7280;
-font-size:15px;
-line-height:1.5;
-
-min-height:50px;
-
+margin-bottom:10px;
 }
 
-button{
-
-border:none;
-
-padding:14px 20px;
-
-border-radius:10px;
-
-cursor:pointer;
-
-font-size:16px;
+.big-text{
+font-size:28px;
 font-weight:bold;
+color:#1e3a8a;
+}
 
+.middle-grid{
+display:grid;
+grid-template-columns:2fr 1fr;
+gap:20px;
+margin-bottom:20px;
+}
+
+.word-box{
+background:white;
+border-radius:18px;
+padding:30px;
+box-shadow:0 4px 12px rgba(0,0,0,.08);
+min-height:250px;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+text-align:center;
+}
+
+.word-label{
+font-size:18px;
+color:#6b7280;
+margin-bottom:20px;
+}
+
+.word{
+font-size:54px;
+font-weight:bold;
+color:#1e40af;
+margin-bottom:20px;
+word-break:break-word;
+}
+
+.timer{
+font-size:72px;
+font-weight:bold;
+color:#dc2626;
+}
+
+.status-box{
+background:white;
+padding:25px;
+border-radius:18px;
+box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+
+.status-title{
+font-size:20px;
+font-weight:bold;
+margin-bottom:15px;
+color:#1e3a8a;
+}
+
+.status{
+font-size:18px;
+font-weight:bold;
+padding:14px;
+border-radius:10px;
+background:#dbeafe;
+color:#1d4ed8;
+margin-bottom:20px;
+text-align:center;
+}
+
+.vote-grid{
+display:grid;
+grid-template-columns:1fr;
+gap:12px;
+}
+
+.vote-btn{
+padding:16px;
+border:none;
+border-radius:12px;
+font-size:18px;
+font-weight:bold;
+cursor:pointer;
 color:white;
-
-margin-top:15px;
-
-transition:.3s;
-
+transition:.2s;
 }
 
-button:hover{
-
-opacity:.92;
-
-transform:scale(1.03);
-
+.vote-btn:disabled{
+opacity:.5;
+cursor:not-allowed;
 }
 
-/* COLORS */
-
-.students{
+.correct{
 background:#16a34a;
 }
 
-.groups{
-background:#9333ea;
-}
-
-.draw{
-background:#7c3aed;
-}
-
-.competition{
-background:#2563eb;
-}
-
-.stages{
-background:#0f766e;
-}
-
-.judges{
-background:#db2777;
-}
-
-.leaderboard{
-background:#f59e0b;
-}
-
-.certificates{
+.wrong{
 background:#dc2626;
 }
 
-.settings{
+.notspelt{
+background:#f59e0b;
+}
+
+.controls{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:15px;
+}
+
+.control-btn{
+padding:16px;
+border:none;
+border-radius:14px;
+font-size:16px;
+font-weight:bold;
+cursor:pointer;
+color:white;
+transition:.2s;
+}
+
+.control-btn:hover{
+transform:translateY(-2px);
+}
+
+.start{
+background:#16a34a;
+}
+
+.stop{
+background:#dc2626;
+}
+
+.finalize{
+background:#2563eb;
+}
+
+.next{
+background:#7c3aed;
+}
+
+.reset{
+background:#ef4444;
+}
+
+.music{
+background:#db2777;
+}
+
+.secondary{
 background:#475569;
 }
 
-/* FOOTER */
+.music-panel{
+margin-top:20px;
+background:white;
+padding:20px;
+border-radius:18px;
+box-shadow:0 4px 12px rgba(0,0,0,.08);
+display:none;
+}
 
-.footer{
+.music-grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+gap:12px;
+margin-top:15px;
+}
 
+.music-btn{
+padding:14px;
+border:none;
+border-radius:10px;
+background:#f3f4f6;
+cursor:pointer;
+font-weight:bold;
+}
+
+.footer-note{
+margin-top:25px;
 text-align:center;
-
-padding:30px;
-
 color:#6b7280;
-
 font-size:14px;
+}
+
+@media(max-width:900px){
+
+.middle-grid{
+grid-template-columns:1fr;
+}
+
+.word{
+font-size:38px;
+}
+
+.timer{
+font-size:56px;
+}
 
 }
 
@@ -281,451 +295,141 @@ font-size:14px;
 
 <body>
 
-<!-- HEADER -->
-
 <div class="header">
 
 <div class="header-left">
-
-<h1>
-
-Spelling Competition System
-
+<h1 id="stageTitle">
+Loading Stage...
 </h1>
 
-<p>
-
-Teacher Administration Dashboard
-
+<p id="competitionTitle">
+Competition Loading...
 </p>
-
 </div>
 
-<button
-class="logout"
-onclick="logout()">
+<div class="header-right">
 
-Logout
+<button class="header-btn"
+onclick="goLeaderboard()">
+Leaderboard
+</button>
 
+<button class="header-btn"
+onclick="goHome()">
+Home
 </button>
 
 </div>
 
+</div>
 
 <div class="container">
 
 <!-- TOP INFO -->
-
 <div class="top-grid">
 
-<div class="info-card">
-
-<div class="info-title">
-
-Current Competition
-
+<div class="card">
+<div class="card-title">
+Participant
 </div>
 
-<div
-class="info-value"
-id="competitionName">
-
-No Active Competition
-
+<div class="big-text"
+id="studentName">
+Loading...
+</div>
 </div>
 
+<div class="card">
+<div class="card-title">
+Round
 </div>
 
-
-<div class="info-card">
-
-<div class="info-title">
-
-Current Stage
-
+<div class="big-text"
+id="roundInfo">
+1/3
+</div>
 </div>
 
-<div
-class="info-value"
-id="currentStage">
-
--
-
+<div class="card">
+<div class="card-title">
+Round Score
 </div>
 
-</div>
-
-
-<div class="info-card">
-
-<div class="info-title">
-
-Participants
-
-</div>
-
-<div
-class="info-value"
-id="participantCount">
-
+<div class="big-text"
+id="roundScore">
 0
-
+</div>
 </div>
 
+<div class="card">
+<div class="card-title">
+Total Score
 </div>
 
-
-<div class="info-card">
-
-<div class="info-title">
-
-Judges Connected
-
-</div>
-
-<div
-class="info-value"
-id="judgeCount">
-
+<div class="big-text"
+id="totalScore">
 0
-
+</div>
 </div>
 
 </div>
 
+<!-- MIDDLE -->
+<div class="middle-grid">
+
+<div class="word-box">
+
+<div class="word-label">
+Word To Spell
 </div>
 
+<div class="word"
+id="word">
+READY
+</div>
 
-<!-- MAIN MENU -->
-
-<div class="grid">
-
-
-<!-- COMPETITIONS -->
-
-<div class="card">
-
-<div class="icon">
-
-🏆
+<div class="timer"
+id="timer">
+0
+</div>
 
 </div>
 
-<h2>
+<div class="status-box">
 
-Competitions
+<div class="status-title">
+Competition Status
+</div>
 
-</h2>
+<div class="status"
+id="status">
+Waiting To Start
+</div>
 
-<p>
+<div class="vote-grid">
 
-Create and manage spelling competitions.
+<button class="vote-btn correct"
+id="correctBtn"
+disabled
+onclick="submitVote('correct')">
 
-</p>
-
-<button
-class="competition"
-onclick="go('competitions.html')">
-
-Open
-
+✔ Correct
 </button>
 
-</div>
+<button class="vote-btn wrong"
+id="wrongBtn"
+disabled
+onclick="submitVote('wrong')">
 
-
-<!-- STAGES -->
-
-<div class="card">
-
-<div class="icon">
-
-🎯
-
-</div>
-
-<h2>
-
-Competition Stages
-
-</h2>
-
-<p>
-
-Manage qualifiers, semifinals and finals.
-
-</p>
-
-<button
-class="stages"
-onclick="go('competition-stages.html')">
-
-Open
-
+✖ Wrong
 </button>
 
-</div>
-
-
-<!-- PARTICIPANTS -->
-
-<div class="card">
-
-<div class="icon">
-
-👨‍🎓
-
-</div>
-
-<h2>
-
-Participants
-
-</h2>
-
-<p>
-
-Register and manage competition participants.
-
-</p>
-
-<button
-class="students"
-onclick="go('student-registration.html')">
-
-Open
-
-</button>
-
-</div>
-
-
-<!-- WORD GROUPS -->
-
-<div class="card">
-
-<div class="icon">
-
-📚
-
-</div>
-
-<h2>
-
-Word Groups
-
-</h2>
-
-<p>
-
-Create and organize spelling word groups.
-
-</p>
-
-<button
-class="groups"
-onclick="go('word-groups.html')">
-
-Open
-
-</button>
-
-</div>
-
-
-<!-- DRAW -->
-
-<div class="card">
-
-<div class="icon">
-
-🎲
-
-</div>
-
-<h2>
-
-Participants Draw
-
-</h2>
-
-<p>
-
-Randomly assign participants to groups.
-
-</p>
-
-<button
-class="draw"
-onclick="go('draw.html')">
-
-Open
-
-</button>
-
-</div>
-
-
-<!-- JUDGES -->
-
-<div class="card">
-
-<div class="icon">
-
-⚖️
-
-</div>
-
-<h2>
-
-Judges
-
-</h2>
-
-<p>
-
-Create and manage judges accounts.
-
-</p>
-
-<button
-class="judges"
-onclick="go('judges.html')">
-
-Open
-
-</button>
-
-</div>
-
-
-<!-- LIVE CONTROL -->
-
-<div class="card">
-
-<div class="icon">
-
-🎤
-
-</div>
-
-<h2>
-
-Live Competition
-
-</h2>
-
-<p>
-
-Control the live spelling competition.
-
-</p>
-
-<button
-class="competition"
-onclick="go('teacher.html')">
-
-Open
-
-</button>
-
-</div>
-
-
-<!-- LEADERBOARD -->
-
-<div class="card">
-
-<div class="icon">
-
-🥇
-
-</div>
-
-<h2>
-
-Leaderboard
-
-</h2>
-
-<p>
-
-View live scores and rankings.
-
-</p>
-
-<button
-class="leaderboard"
-onclick="go('leaderboard.html')">
-
-Open
-
-</button>
-
-</div>
-
-
-<!-- CERTIFICATES -->
-
-<div class="card">
-
-<div class="icon">
-
-📜
-
-</div>
-
-<h2>
-
-Certificates
-
-</h2>
-
-<p>
-
-Generate certificates for winners.
-
-</p>
-
-<button
-class="certificates"
-onclick="go('certificates.html')">
-
-Open
-
-</button>
-
-</div>
-
-
-<!-- SETTINGS -->
-
-<div class="card">
-
-<div class="icon">
-
-⚙️
-
-</div>
-
-<h2>
-
-System Settings
-
-</h2>
-
-<p>
-
-Configure competition system settings.
-
-</p>
-
-<button
-class="settings"
-onclick="go('settings.html')">
-
-Open
-
+<button class="vote-btn notspelt"
+id="notspeltBtn"
+disabled
+onclick="submitVote('notspelt')">
+
+⏱ Not Spelt
 </button>
 
 </div>
@@ -734,32 +438,620 @@ Open
 
 </div>
 
+<!-- CONTROLS -->
+<div class="controls">
 
-<div class="footer">
+<button class="control-btn start"
+onclick="startWord()">
 
-Spelling Competition Management System
+▶ START TIMER
+</button>
+
+<button class="control-btn stop"
+onclick="stopTimer()">
+
+■ STOP TIMER
+</button>
+
+<button class="control-btn finalize"
+onclick="finalizeResult()">
+
+✔ FINALIZE RESULT
+</button>
+
+<button class="control-btn next"
+onclick="nextWord()">
+
+⏭ NEXT WORD
+</button>
+
+<button class="control-btn next"
+onclick="nextParticipant()">
+
+👤 NEXT PARTICIPANT
+</button>
+
+<button class="control-btn secondary"
+onclick="toggleMusicPanel()">
+
+🎵 MUSIC PANEL
+</button>
+
+<button class="control-btn reset"
+onclick="resetParticipant()">
+
+↺ RESET PARTICIPANT
+</button>
+
+<button class="control-btn reset"
+onclick="resetCompetition()">
+
+🗑 RESET COMPETITION
+</button>
 
 </div>
 
+<!-- MUSIC -->
+<div class="music-panel"
+id="musicPanel">
+
+<h2>
+Competition Music & Sounds
+</h2>
+
+<div class="music-grid">
+
+<button class="music-btn"
+onclick="playMusic('music/welcome.mp3')">
+
+Welcome Music
+</button>
+
+<button class="music-btn"
+onclick="playMusic('music/tension.mp3')">
+
+Tension Music
+</button>
+
+<button class="music-btn"
+onclick="playMusic('music/background.mp3')">
+
+Background Music
+</button>
+
+<button class="music-btn"
+onclick="playMusic('music/victory.mp3')">
+
+Victory Music
+</button>
+
+<button class="music-btn"
+onclick="stopMusic()">
+
+Stop Music
+</button>
+
+</div>
+
+</div>
+
+<div class="footer-note">
+Teacher is also an active judge and controls the entire competition flow in realtime.
+</div>
+
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/competition.js"></script>
 
 <script>
 
-function go(page){
+let competition = null;
+let stage = null;
 
-window.location = page;
+let students = [];
+let words = [];
+
+let currentStudentIndex = 0;
+let currentWordIndex = 0;
+let currentRound = 1;
+
+let roundScore = 0;
+let totalScores = {};
+
+let timer = null;
+let timeLeft = 0;
+let usedTime = 0;
+let started = false;
+
+let music = new Audio();
+
+/* =========================
+LOAD SYSTEM
+========================= */
+
+window.onload = async()=>{
+
+await loadCompetition();
+await loadStage();
+await loadStudents();
+
+};
+
+/* =========================
+LOAD COMPETITION
+========================= */
+
+async function loadCompetition(){
+
+const res = await api({
+action:"getActiveCompetition"
+});
+
+competition = res.competition;
+
+document.getElementById("competitionTitle")
+.innerText = competition.competition_name;
 
 }
 
-function logout(){
+/* =========================
+LOAD ACTIVE STAGE
+========================= */
 
-localStorage.removeItem("user");
+async function loadStage(){
 
-window.location = "login.html";
+const res = await api({
+action:"getActiveStage",
+competition_id:competition.id
+});
+
+stage = res.stage;
+
+document.getElementById("stageTitle")
+.innerText =
+`Stage ${stage.stage_number} • ${stage.stage_name}`;
+
+}
+
+/* =========================
+LOAD STUDENTS
+========================= */
+
+async function loadStudents(){
+
+const res = await api({
+action:"getStudents",
+competition_id:competition.id,
+stage_number:stage.stage_number
+});
+
+students = res.students || [];
+
+showStudent();
+await loadWords();
+
+}
+
+/* =========================
+LOAD WORDS
+========================= */
+
+async function loadWords(){
+
+const res = await api({
+action:"getWordGroups"
+});
+
+const student = students[currentStudentIndex];
+
+const group =
+res.groups.find(
+g => g.group_number == student.group_number
+);
+
+words = group?.words || [];
+
+showWord();
+
+}
+
+/* =========================
+SHOW STUDENT
+========================= */
+
+function showStudent(){
+
+const student = students[currentStudentIndex];
+
+if(!student)return;
+
+document.getElementById("studentName")
+.innerText = student.full_name;
+
+document.getElementById("roundInfo")
+.innerText =
+`${currentRound}/${stage.total_rounds}`;
+
+document.getElementById("roundScore")
+.innerText = roundScore;
+
+document.getElementById("totalScore")
+.innerText =
+totalScores[student.id] || 0;
+
+}
+
+/* =========================
+SHOW WORD
+========================= */
+
+function showWord(){
+
+const index =
+((currentRound-1) * stage.words_per_round)
++ currentWordIndex;
+
+const word = words[index];
+
+document.getElementById("word")
+.innerText = word || "FINISHED";
+
+if(word){
+
+timeLeft = calculateTime(word);
+
+document.getElementById("timer")
+.innerText = timeLeft;
+
+}
+
+}
+
+/* =========================
+CALCULATE TIME
+========================= */
+
+function calculateTime(word){
+
+if(word.length <= 4)return 8;
+if(word.length <= 7)return 12;
+if(word.length <= 10)return 15;
+
+return 20;
+
+}
+
+/* =========================
+START TIMER
+========================= */
+
+async function startWord(){
+
+if(started)return;
+
+started = true;
+
+const word =
+words[
+((currentRound-1) * stage.words_per_round)
++ currentWordIndex
+];
+
+timeLeft = calculateTime(word);
+
+usedTime = 0;
+
+updateStatus("Timer Running");
+
+disableVoting();
+
+timer = setInterval(async()=>{
+
+timeLeft--;
+usedTime++;
+
+document.getElementById("timer")
+.innerText = timeLeft;
+
+if(timeLeft <= 0){
+
+clearInterval(timer);
+
+started = false;
+
+enableVoting();
+
+updateStatus("Time Finished");
+
+}
+
+},1000);
+
+}
+
+/* =========================
+STOP TIMER
+========================= */
+
+async function stopTimer(){
+
+clearInterval(timer);
+
+started = false;
+
+enableVoting();
+
+updateStatus("Waiting Judges Votes");
+
+}
+
+/* =========================
+ENABLE VOTING
+========================= */
+
+function enableVoting(){
+
+document.getElementById("correctBtn")
+.disabled = false;
+
+document.getElementById("wrongBtn")
+.disabled = false;
+
+document.getElementById("notspeltBtn")
+.disabled = false;
+
+}
+
+/* =========================
+DISABLE VOTING
+========================= */
+
+function disableVoting(){
+
+document.getElementById("correctBtn")
+.disabled = true;
+
+document.getElementById("wrongBtn")
+.disabled = true;
+
+document.getElementById("notspeltBtn")
+.disabled = true;
+
+}
+
+/* =========================
+SUBMIT VOTE
+========================= */
+
+async function submitVote(vote){
+
+const student = students[currentStudentIndex];
+
+const index =
+((currentRound-1) * stage.words_per_round)
++ currentWordIndex;
+
+const word = words[index];
+
+await api({
+action:"submitJudgeVote",
+competition_id:competition.id,
+stage_number:stage.stage_number,
+student_id:student.id,
+word,
+vote,
+used_time:usedTime
+});
+
+updateStatus(`Teacher voted ${vote}`);
+
+}
+
+/* =========================
+FINALIZE RESULT
+========================= */
+
+async function finalizeResult(){
+
+const student = students[currentStudentIndex];
+
+const index =
+((currentRound-1) * stage.words_per_round)
++ currentWordIndex;
+
+const word = words[index];
+
+const result = await api({
+action:"finalizeVotes",
+competition_id:competition.id,
+stage_number:stage.stage_number,
+student_id:student.id,
+word,
+used_time:usedTime,
+time_allowed:calculateTime(word)
+});
+
+if(result.final_status === "correct"){
+
+roundScore += Number(result.score);
+
+if(!totalScores[student.id]){
+totalScores[student.id] = 0;
+}
+
+totalScores[student.id] += Number(result.score);
+
+}
+
+document.getElementById("roundScore")
+.innerText = roundScore.toFixed(2);
+
+document.getElementById("totalScore")
+.innerText =
+(totalScores[student.id] || 0).toFixed(2);
+
+updateStatus(
+`Final Result: ${result.final_status.toUpperCase()}`
+);
+
+disableVoting();
+
+}
+
+/* =========================
+NEXT WORD
+========================= */
+
+function nextWord(){
+
+currentWordIndex++;
+
+if(currentWordIndex >= stage.words_per_round){
+
+nextParticipant();
+return;
+
+}
+
+showWord();
+
+disableVoting();
+
+updateStatus("Ready For Next Word");
+
+}
+
+/* =========================
+NEXT PARTICIPANT
+========================= */
+
+function nextParticipant(){
+
+currentStudentIndex++;
+
+currentWordIndex = 0;
+roundScore = 0;
+
+if(currentStudentIndex >= students.length){
+
+currentStudentIndex = 0;
+currentRound++;
+
+if(currentRound > stage.total_rounds){
+
+updateStatus("Competition Finished");
+
+window.location =
+"leaderboard.html";
+
+return;
+
+}
+
+}
+
+showStudent();
+showWord();
+
+disableVoting();
+
+}
+
+/* =========================
+RESET PARTICIPANT
+========================= */
+
+function resetParticipant(){
+
+currentWordIndex = 0;
+roundScore = 0;
+
+showStudent();
+showWord();
+
+}
+
+/* =========================
+RESET COMPETITION
+========================= */
+
+async function resetCompetition(){
+
+if(!confirm("Reset competition?")){
+return;
+}
+
+await api({
+action:"resetState"
+});
+
+location.reload();
+
+}
+
+/* =========================
+STATUS
+========================= */
+
+function updateStatus(text){
+
+document.getElementById("status")
+.innerText = text;
+
+}
+
+/* =========================
+MUSIC
+========================= */
+
+function toggleMusicPanel(){
+
+const panel =
+document.getElementById("musicPanel");
+
+panel.style.display =
+panel.style.display === "block"
+? "none"
+: "block";
+
+}
+
+function playMusic(src){
+
+music.pause();
+
+music = new Audio(src);
+
+music.loop = true;
+
+music.play();
+
+}
+
+function stopMusic(){
+
+music.pause();
+
+}
+
+/* =========================
+NAVIGATION
+========================= */
+
+function goHome(){
+
+window.location = "teacher-home.html";
+
+}
+
+function goLeaderboard(){
+
+window.location = "leaderboard.html";
 
 }
 
 </script>
 
 </body>
-
-  </html>
+</html>

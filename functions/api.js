@@ -83,52 +83,6 @@ console.log("ACTION:", action);
 
       return Response.json({ success: true });
     }
-
-    // =====================================================
-    // ACTIVATE STAGE
-    // =====================================================
-    if (action === "activateStage") {
-
-      await sql`
-        UPDATE competition_stages
-        SET status='inactive'
-      `;
-
-      await sql`
-        UPDATE competition_stages
-        SET status='active'
-        WHERE id=${body.stage_id}
-      `;
-
-      return Response.json({ success: true });
-    }
-
-    // =====================================================
-    // CREATE COMPETITION
-    // =====================================================
-    if (action === "createCompetition") {
-
-      await sql`
-        INSERT INTO competitions (competition_name, status)
-        VALUES (${body.competition_name}, 'inactive')
-      `;
-
-      return Response.json({ success: true });
-    }
-
-    // =====================================================
-    // GET COMPETITIONS
-    // =====================================================
-    if (action === "getCompetitions") {
-
-      const result = await sql`
-        SELECT * FROM competitions
-        ORDER BY id DESC
-      `;
-
-      return Response.json({ competitions: result });
-    }
-
 // =====================================================
 // ACTIVATE STAGE
 // =====================================================
@@ -161,12 +115,14 @@ if (action === "activateStage") {
 
   // if no learners exist, initialize them
   if (existing.length === 0) {
-
+    
+console.log("ACTIVE STAGE:", activeStage);
     const students = await sql`
       SELECT id
       FROM students
       WHERE competition_id=${activeStage.competition_id}
     `;
+    console.log("FOUND STUDENTS:", students);
 
     for (const student of students) {
 
@@ -191,6 +147,57 @@ if (action === "activateStage") {
     success:true
   });
 }
+
+    // =====================================================
+    // CREATE COMPETITION
+    // =====================================================
+    if (action === "createCompetition") {
+
+      await sql`
+        INSERT INTO competitions (competition_name, status)
+        VALUES (${body.competition_name}, 'inactive')
+      `;
+
+      return Response.json({ success: true });
+    }
+
+    // =====================================================
+    // GET COMPETITIONS
+    // =====================================================
+    if (action === "getCompetitions") {
+
+      const result = await sql`
+        SELECT * FROM competitions
+        ORDER BY id DESC
+      `;
+
+      return Response.json({ competitions: result });
+    }
+
+
+    // =====================================================
+    // ACTIVATE COMPETITION
+    // =====================================================
+    if (action === "activateCompetition") {
+
+      await sql`
+        UPDATE competitions
+        SET status='inactive'
+        WHERE status='active'
+      `;
+
+      const result = await sql`
+        UPDATE competitions
+        SET status='active'
+        WHERE id=${body.competition_id}
+        RETURNING *
+      `;
+
+      return Response.json({
+        success: true,
+        competition: result[0]
+      });
+    }
 
     // =====================================================
     // DELETE COMPETITION

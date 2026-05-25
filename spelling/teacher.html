@@ -441,25 +441,25 @@ onclick="submitVote('notspelt')">
 <div class="controls">
 
 <button class="control-btn start"
-onclick="startCompetitionTimer()">
+onclick="startWord()">
 
 ▶ START TIMER
 </button>
 
 <button class="control-btn stop"
-onclick="stopCompetitionTimer()">
+onclick="stopTimer()">
 
 ■ STOP TIMER
 </button>
 
 <button class="control-btn finalize"
-onclick="finalizeCurrentResult()">
+onclick="finalizeResult()">
 
 ✔ FINALIZE RESULT
 </button>
 
 <button class="control-btn next"
-onclick="moveToNextWord()">
+onclick="nextWord()">
 
 ⏭ NEXT WORD
 </button>
@@ -483,7 +483,7 @@ onclick="resetParticipant()">
 </button>
 
 <button class="control-btn reset"
-onclick="hardResetCompetition()">
+onclick="resetCompetition()">
 
 🗑 RESET COMPETITION
 </button>
@@ -542,6 +542,232 @@ Teacher is also an active judge and controls the entire competition flow in real
 
 <script src="js/api.js"></script>
 <script src="js/competition.js"></script>
+
+<script>
+
+let competition = null;
+let stage = null;
+
+let students = [];
+let words = [];
+
+let currentStudentIndex = 0;
+let currentWordIndex = 0;
+let currentRound = 1;
+
+let roundScore = 0;
+let totalScores = {};
+
+let timer = null;
+let timeLeft = 0;
+let usedTime = 0;
+let started = false;
+
+let music = new Audio();
+
+/* =========================
+LOAD SYSTEM
+========================= */
+
+window.onload = async()=>{
+
+await loadCompetition();
+await loadStage();
+};
+
+/* =========================
+LOAD COMPETITION
+========================= */
+
+async function loadCompetition(){
+
+const res = await api({
+action:"getActiveCompetition"
+});
+
+competition = res.competition;
+
+document.getElementById("competitionTitle")
+.innerText = competition.competition_name;
+
+}
+
+/* =========================
+LOAD ACTIVE STAGE
+========================= */
+
+async function loadStage(){
+
+const res = await api({
+action:"getActiveStage",
+competition_id:competition.id
+});
+
+stage = res.stage;
+
+document.getElementById("stageTitle")
+.innerText =
+`Stage ${stage.stage_number} • ${stage.stage_name}`;
+
+}
+
+
+
+/* =========================
+SHOW STUDENT
+========================= */
+
+function showStudent(){
+
+const student = students[currentStudentIndex];
+
+if(!student)return;
+
+document.getElementById("studentName")
+.innerText = student.full_name;
+
+document.getElementById("roundInfo")
+.innerText =
+`${currentRound}/${stage.total_rounds}`;
+
+document.getElementById("roundScore")
+.innerText = roundScore;
+
+document.getElementById("totalScore")
+.innerText =
+totalScores[student.id] || 0;
+
+}
+
+
+/* =========================
+NEXT PARTICIPANT
+========================= */
+
+function nextParticipant(){
+
+currentStudentIndex++;
+
+currentWordIndex = 0;
+roundScore = 0;
+
+if(currentStudentIndex >= students.length){
+
+currentStudentIndex = 0;
+currentRound++;
+
+if(currentRound > stage.total_rounds){
+
+updateStatus("Competition Finished");
+
+window.location =
+"leaderboard.html";
+
+return;
+
+}
+
+}
+
+showStudent();
+showWord();
+
+disableVoting();
+
+}
+
+/* =========================
+RESET PARTICIPANT
+========================= */
+
+function resetParticipant(){
+
+currentWordIndex = 0;
+roundScore = 0;
+
+showStudent();
+showWord();
+
+}
+
+/* =========================
+RESET COMPETITION
+========================= */
+
+async function resetCompetition(){
+
+if(!confirm("Reset competition?")){
+return;
+}
+
+await api({
+action:"resetState"
+});
+
+location.reload();
+
+}
+
+/* =========================
+STATUS
+========================= */
+
+function updateStatus(text){
+
+document.getElementById("status")
+.innerText = text;
+
+}
+
+/* =========================
+MUSIC
+========================= */
+
+function toggleMusicPanel(){
+
+const panel =
+document.getElementById("musicPanel");
+
+panel.style.display =
+panel.style.display === "block"
+? "none"
+: "block";
+
+}
+
+function playMusic(src){
+
+music.pause();
+
+music = new Audio(src);
+
+music.loop = true;
+
+music.play();
+
+}
+
+function stopMusic(){
+
+music.pause();
+
+}
+
+/* =========================
+NAVIGATION
+========================= */
+
+function goHome(){
+
+window.location = "teacher-home.html";
+
+}
+
+function goLeaderboard(){
+
+window.location = "leaderboard.html";
+
+}
 
 </script>
 

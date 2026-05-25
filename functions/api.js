@@ -84,17 +84,17 @@ console.log("ACTION:", action);
       return Response.json({ success: true });
     }
 // =====================================================
-// ACTIVATE STAGE
+// ACTIVATE STAGE (FIXED)
 // =====================================================
 if (action === "activateStage") {
 
-  // deactivate all stages
+  // 1. deactivate all stages
   await sql`
     UPDATE competition_stages
     SET status='inactive'
   `;
 
-  // activate selected stage
+  // 2. activate selected stage
   const stage = await sql`
     UPDATE competition_stages
     SET status='active'
@@ -104,28 +104,25 @@ if (action === "activateStage") {
 
   const activeStage = stage[0];
 
-  // check if stage already has learners
+  // 3. ONLY ensure progress exists for THIS stage
   const existing = await sql`
-    SELECT id
+    SELECT 1
     FROM student_stage_progress
     WHERE competition_id=${activeStage.competition_id}
-    AND stage_number=${activeStage.stage_number}
+      AND stage_number=${activeStage.stage_number}
     LIMIT 1
   `;
 
-  // if no learners exist, initialize them
-  if (existing.length === 0) {
-    
-console.log("ACTIVE STAGE:", activeStage);
+  // ❗ ONLY initialize Stage 1 (or empty system)
+  if (existing.length === 0 && activeStage.stage_number == 1) {
+
     const students = await sql`
       SELECT id
       FROM students
       WHERE competition_id=${activeStage.competition_id}
     `;
-    console.log("FOUND STUDENTS:", students);
 
     for (const student of students) {
-
       await sql`
         INSERT INTO student_stage_progress(
           student_id,
@@ -143,11 +140,8 @@ console.log("ACTIVE STAGE:", activeStage);
     }
   }
 
-  return Response.json({
-    success:true
-  });
+  return Response.json({ success: true });
 }
-
     // =====================================================
     // CREATE COMPETITION
     // =====================================================

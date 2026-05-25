@@ -1,6 +1,6 @@
 // ==========================================
-// GLOBAL SPELLING COMPETITION ENGINE
-// app.js
+// PROFESSIONAL SPELLING COMPETITION ENGINE
+// competition.js
 // ==========================================
 
 // ==========================================
@@ -30,10 +30,12 @@ competitionFinish:new Audio("sounds/competition-finish.mp3")
 };
 
 // ==========================================
-// GLOBAL VARIABLES
+// GLOBAL STATE
 // ==========================================
 
 let realtimeTimer = null;
+
+let backgroundMusic = new Audio();
 
 let competitionState = {
 
@@ -43,6 +45,8 @@ stage:null,
 
 students:[],
 
+wordGroups:[],
+
 words:[],
 
 currentStudentIndex:0,
@@ -51,20 +55,20 @@ currentRound:1,
 
 currentWordIndex:0,
 
-timeLeft:0,
-
-started:false,
-
-usedTime:0,
+currentStudent:null,
 
 currentWord:"",
 
-currentStudent:null
+timeLeft:0,
+
+usedTime:0,
+
+started:false
 
 };
 
 // ==========================================
-// PLAY SOUND
+// AUDIO HELPERS
 // ==========================================
 
 function playSound(sound){
@@ -88,16 +92,11 @@ console.log(error);
 
 }
 
-// ==========================================
-// STOP ALL SOUNDS
-// ==========================================
-
 function stopAllSounds(){
 
 Object.values(sounds).forEach(sound=>{
 
 sound.pause();
-
 sound.currentTime = 0;
 
 });
@@ -105,41 +104,13 @@ sound.currentTime = 0;
 }
 
 // ==========================================
-// API HELPER
+// INITIALIZE
 // ==========================================
 
-async function api(data){
-
-try{
-
-const res = await fetch("/api",{
-
-method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify(data)
-
-});
-
-return await res.json();
-
-}
-catch(error){
-
-console.log(error);
-
-return null;
-
-}
-
-}
-
-// ==========================================
-// INIT ENGINE
-// ==========================================
+window.addEventListener(
+"load",
+initializeCompetition
+);
 
 async function initializeCompetition(){
 
@@ -151,30 +122,52 @@ action:"getActiveCompetition"
 });
 
 competitionState.competition =
-competitionRes.competition;
+competitionRes?.competition || null;
+
+if(!competitionState.competition){
+
+updateTeacherStatus(
+"No active competition"
+);
+
+return;
+
+}
+
+// SHOW COMPETITION NAME
+document.getElementById(
+"competitionTitle"
+).innerText =
+competitionState.competition.competition_name;
 
 // ACTIVE STAGE
 const stageRes = await api({
+
 action:"getActiveStage",
+
 competition_id:
 competitionState.competition.id
+
 });
 
 competitionState.stage =
-stageRes.stage;
+stageRes?.stage || null;
 
-// ENSURE STAGE READY
-await api({
+if(!competitionState.stage){
 
-action:"ensureStageReady",
+updateTeacherStatus(
+"No active stage"
+);
 
-competition_id:
-competitionState.competition.id,
+return;
 
-stage_number:
-competitionState.stage.stage_number
+}
 
-});
+// SHOW STAGE
+document.getElementById(
+"stageTitle"
+).innerText =
+`Stage ${competitionState.stage.stage_number} • ${competitionState.stage.stage_name}`;
 
 // LOAD STUDENTS
 const studentsRes = await api({
@@ -190,7 +183,7 @@ competitionState.stage.stage_number
 });
 
 competitionState.students =
-studentsRes.students || [];
+studentsRes?.students || [];
 
 // LOAD WORD GROUPS
 const wordsRes = await api({
@@ -198,23 +191,29 @@ action:"getWordGroups"
 });
 
 competitionState.wordGroups =
-wordsRes.groups || [];
+wordsRes?.groups || [];
 
-// LOAD SAVED STATE
+// RESTORE SAVED STATE
 await restoreCompetitionState();
 
-// PREPARE CURRENT
+// PREPARE CURRENT STUDENT
 prepareCurrentParticipant();
 
-// START REALTIME
+// START REALTIME SYNC
 startRealtimeSync();
+
+// UPDATE STATUS
+updateTeacherStatus(
+"Competition Ready"
+);
 
 }
 catch(error){
 
-console.log(
-"Initialization failed",
-error
+console.log(error);
+
+updateTeacherStatus(
+"Failed to initialize"
 );
 
 }
@@ -222,7 +221,7 @@ error
 }
 
 // ==========================================
-// PREPARE CURRENT PARTICIPANT
+// PREPARE PARTICIPANT
 // ==========================================
 
 function prepareCurrentParticipant(){
@@ -232,11 +231,30 @@ competitionState.students[
 competitionState.currentStudentIndex
 ];
 
-competitionState.currentStudent = student;
+competitionState.currentStudent =
+student || null;
 
-if(!student)return;
+if(!student){
 
-// FIND GROUP
+document.getElementById(
+"studentName"
+).innerText = "No Participant";
+
+document.getElementById(
+"word"
+).innerText = "READY";
+
+return;
+
+}
+
+// DISPLAY STUDENT
+document.getElementById(
+"studentName"
+).innerText =
+student.full_name;
+
+// FIND WORD GROUP
 const group =
 competitionState.wordGroups.find(
 g => g.group_number == student.group_number
@@ -245,6 +263,7 @@ g => g.group_number == student.group_number
 competitionState.words =
 group?.words || [];
 
+// PREPARE WORD
 prepareCurrentWord();
 
 }
@@ -258,9 +277,16 @@ function prepareCurrentWord(){
 const stage =
 competitionState.stage;
 
+if(!stage)return;
+
 const index =
-((competitionState.currentRound - 1)
-* stage.words_per_round)
+(
+(
+competitionState.currentRound - 1
+)
+*
+stage.words_per_round
+)
 +
 competitionState.currentWordIndex;
 
@@ -268,21 +294,34 @@ const word =
 competitionState.words[index];
 
 competitionState.currentWord =
-word || "";
+word || "FINISHED";
 
-if(word){
+// DISPLAY WORD
+document.getElementById(
+"word"
+).innerText =
+competitionState.currentWord;
 
+// ROUND INFO
+document.getElementById(
+"roundInfo"
+).innerText =
+`${competitionState.currentRound}/${stage.total_rounds}`;
+
+// TIMER
 competitionState.timeLeft =
-calculateAllowedTime(word);
+calculateAllowedTime(
+competitionState.currentWord
+);
 
-updateTeacherUI();
+updateTeacherTimer();
 
-}
+disableVotingButtons();
 
 }
 
 // ==========================================
-// TIME CALCULATION
+// CALCULATE TIME
 // ==========================================
 
 function calculateAllowedTime(word){
@@ -305,7 +344,7 @@ return 20;
 // START TIMER
 // ==========================================
 
-async function startCompetitionTimer(){
+async function startWord(){
 
 if(competitionState.started)return;
 
@@ -313,11 +352,11 @@ competitionState.started = true;
 
 competitionState.usedTime = 0;
 
+disableVotingButtons();
+
 updateTeacherStatus(
 "Timer Running"
 );
-
-disableVotingButtons();
 
 await saveCompetitionState();
 
@@ -331,7 +370,7 @@ updateTeacherTimer();
 
 playSound(sounds.tick);
 
-// HALF TIME
+// HALF WAY SOUND
 if(
 competitionState.timeLeft ===
 Math.floor(
@@ -354,7 +393,7 @@ playSound(sounds.warning);
 
 }
 
-// TIMEOUT
+// TIME FINISHED
 if(
 competitionState.timeLeft <= 0
 ){
@@ -381,8 +420,6 @@ return;
 
 }
 
-updateTeacherTimer();
-
 await saveCompetitionState();
 
 },1000);
@@ -393,540 +430,21 @@ await saveCompetitionState();
 // STOP TIMER
 // ==========================================
 
-async function stopCompetitionTimer(){
+async function stopTimer(){
 
 clearInterval(realtimeTimer);
 
 competitionState.started = false;
 
-enableVotingButtons();
-
 stopAllSounds();
+
+enableVotingButtons();
 
 updateTeacherStatus(
 "Voting Open"
 );
 
 await saveCompetitionState();
-
-}
-
-// ==========================================
-// SAVE STATE
-// ==========================================
-
-async function saveCompetitionState(){
-
-await api({
-
-action:"updateState",
-
-competition_id:
-competitionState.competition.id,
-
-stage_number:
-competitionState.stage.stage_number,
-
-currentStudent:
-competitionState.currentStudentIndex,
-
-round:
-competitionState.currentRound,
-
-currentWordIndex:
-competitionState.currentWordIndex,
-
-timeLeft:
-competitionState.timeLeft,
-
-started:
-competitionState.started,
-
-score:
-document.getElementById("roundScore")
-?.innerText || 0,
-
-participant_done:false
-
-});
-
-}
-
-// ==========================================
-// RESTORE STATE
-// ==========================================
-
-async function restoreCompetitionState(){
-
-const res = await api({
-action:"getCompetitionRealtime",
-competition_id:
-competitionState.competition.id
-});
-
-if(!res)return;
-
-competitionState.currentStudentIndex =
-res.current_student_index || 0;
-
-competitionState.currentRound =
-res.current_round || 1;
-
-competitionState.currentWordIndex =
-res.current_word_index || 0;
-
-competitionState.timeLeft =
-res.time_left || 0;
-
-competitionState.started =
-res.started || false;
-
-}
-
-// ==========================================
-// FINALIZE RESULT
-// ==========================================
-
-async function finalizeCurrentResult(){
-
-try{
-
-const student =
-competitionState.currentStudent;
-
-const result = await api({
-
-action:"finalizeVotes",
-
-competition_id:
-competitionState.competition.id,
-
-stage_number:
-competitionState.stage.stage_number,
-
-student_id:
-student.id,
-
-word:
-competitionState.currentWord,
-
-used_time:
-competitionState.usedTime,
-
-time_allowed:
-calculateAllowedTime(
-competitionState.currentWord
-)
-
-});
-
-if(!result)return;
-
-// UPDATE SCORE
-let score =
-Number(result.score || 0);
-
-let roundScore =
-Number(
-document.getElementById("roundScore")
-.innerText
-);
-
-roundScore += score;
-
-document.getElementById(
-"roundScore"
-).innerText =
-roundScore.toFixed(2);
-
-// TOTAL SCORE
-let total =
-Number(
-document.getElementById("totalScore")
-.innerText
-);
-
-total += score;
-
-document.getElementById(
-"totalScore"
-).innerText =
-total.toFixed(2);
-
-// SOUND
-if(result.final_status === "correct"){
-
-if(
-competitionState.usedTime <=
-calculateAllowedTime(
-competitionState.currentWord
-)/2
-){
-
-playSound(sounds.applause);
-
-}else{
-
-playSound(sounds.correct);
-
-}
-
-}else{
-
-playSound(sounds.wrong);
-
-}
-
-updateTeacherStatus(
-`Final Result: ${result.final_status}`
-);
-
-await saveCompetitionState();
-
-}
-catch(error){
-
-console.log(error);
-
-}
-
-}
-
-// ==========================================
-// NEXT WORD
-// ==========================================
-
-async function moveToNextWord(){
-
-competitionState.currentWordIndex++;
-
-const stage =
-competitionState.stage;
-
-// ROUND FINISHED
-if(
-competitionState.currentWordIndex >=
-stage.words_per_round
-){
-
-playSound(
-sounds.roundFinish
-);
-
-competitionState.currentWordIndex = 0;
-
-competitionState.currentStudentIndex++;
-
-// ALL STUDENTS FINISHED
-if(
-competitionState.currentStudentIndex >=
-competitionState.students.length
-){
-
-competitionState.currentStudentIndex = 0;
-
-competitionState.currentRound++;
-
-// COMPETITION FINISHED
-if(
-competitionState.currentRound >
-stage.total_rounds
-){
-
-playSound(
-sounds.competitionFinish
-);
-
-await finishCompetition();
-
-return;
-
-}
-
-}
-
-}
-
-// RESET TIMER
-competitionState.timeLeft = 0;
-
-competitionState.usedTime = 0;
-
-competitionState.started = false;
-
-// LOAD NEXT
-prepareCurrentParticipant();
-
-updateTeacherUI();
-
-await saveCompetitionState();
-
-}
-
-// ==========================================
-// FINISH COMPETITION
-// ==========================================
-
-async function finishCompetition(){
-
-updateTeacherStatus(
-"Competition Finished"
-);
-
-await api({
-
-action:"autoAdvanceStage",
-
-competition_id:
-competitionState.competition.id,
-
-current_stage_number:
-competitionState.stage.stage_number
-
-});
-
-setTimeout(()=>{
-
-window.location =
-"leaderboard.html";
-
-},4000);
-
-}
-
-// ==========================================
-// UPDATE UI
-// ==========================================
-
-function updateTeacherUI(){
-
-const student =
-competitionState.currentStudent;
-
-if(!student)return;
-
-// NAME
-document.getElementById(
-"studentName"
-).innerText =
-student.full_name;
-
-// ROUND
-document.getElementById(
-"roundInfo"
-).innerText =
-`${competitionState.currentRound}/${competitionState.stage.total_rounds}`;
-
-// WORD
-document.getElementById(
-"word"
-).innerText =
-competitionState.currentWord || "FINISHED";
-
-// TIMER
-updateTeacherTimer();
-
-}
-
-// ==========================================
-// UPDATE TIMER
-// ==========================================
-
-function updateTeacherTimer(){
-
-const timer =
-document.getElementById("timer");
-
-if(timer){
-
-timer.innerText =
-competitionState.timeLeft;
-
-}
-
-}
-
-// ==========================================
-// STATUS
-// ==========================================
-
-function updateTeacherStatus(text){
-
-const el =
-document.getElementById("status");
-
-if(el){
-
-el.innerText = text;
-
-}
-
-}
-
-// ==========================================
-// BUTTONS
-// ==========================================
-
-function disableVotingButtons(){
-
-const ids = [
-"correctBtn",
-"wrongBtn",
-"notspeltBtn"
-];
-
-ids.forEach(id=>{
-
-const btn =
-document.getElementById(id);
-
-if(btn){
-
-btn.disabled = true;
-
-}
-
-});
-
-}
-
-function enableVotingButtons(){
-
-const ids = [
-"correctBtn",
-"wrongBtn",
-"notspeltBtn"
-];
-
-ids.forEach(id=>{
-
-const btn =
-document.getElementById(id);
-
-if(btn){
-
-btn.disabled = false;
-
-}
-
-});
-
-}
-
-// ==========================================
-// REALTIME SYNC
-// ==========================================
-
-function startRealtimeSync(){
-
-setInterval(async()=>{
-
-const res = await api({
-
-action:"getCompetitionRealtime",
-
-competition_id:
-competitionState.competition.id
-
-});
-
-if(!res)return;
-
-// ONLY UPDATE TIMER IF TEACHER
-// IS NOT CURRENTLY RUNNING LOCAL TIMER
-
-if(!competitionState.started){
-
-competitionState.timeLeft =
-res.time_left || 0;
-
-competitionState.started =
-res.started || false;
-
-updateTeacherTimer();
-
-}
-
-},1000);
-
-}
-
-// ==========================================
-// RESET
-// ==========================================
-
-async function hardResetCompetition(){
-
-if(
-!confirm(
-"Reset whole competition?"
-)
-){
-return;
-}
-
-await api({
-action:"resetState"
-});
-
-location.reload();
-
-}
-// ==========================================
-// NAVIGATION
-// ==========================================
-
-function goHome(){
-
-window.location =
-"teacher-home.html";
-
-}
-
-function goLeaderboard(){
-
-window.location =
-"leaderboard.html";
-
-}
-
-// ==========================================
-// MUSIC
-// ==========================================
-
-let backgroundMusic =
-new Audio();
-
-function toggleMusicPanel(){
-
-const panel =
-document.getElementById(
-"musicPanel"
-);
-
-panel.style.display =
-panel.style.display === "block"
-? "none"
-: "block";
-
-}
-
-function playMusic(src){
-
-backgroundMusic.pause();
-
-backgroundMusic =
-new Audio(src);
-
-backgroundMusic.loop = true;
-
-backgroundMusic.play();
-
-}
-
-function stopMusic(){
-
-backgroundMusic.pause();
 
 }
 
@@ -969,7 +487,7 @@ competitionState.usedTime
 });
 
 updateTeacherStatus(
-`Vote submitted: ${vote}`
+`Vote Submitted: ${vote}`
 );
 
 }
@@ -982,10 +500,546 @@ console.log(error);
 }
 
 // ==========================================
-// AUTO START
+// FINALIZE RESULT
 // ==========================================
 
-window.addEventListener(
-"load",
-initializeCompetition
+async function finalizeResult(){
+
+try{
+
+const student =
+competitionState.currentStudent;
+
+if(!student)return;
+
+const result = await api({
+
+action:"finalizeVotes",
+
+competition_id:
+competitionState.competition.id,
+
+stage_number:
+competitionState.stage.stage_number,
+
+student_id:
+student.id,
+
+word:
+competitionState.currentWord,
+
+used_time:
+competitionState.usedTime,
+
+time_allowed:
+calculateAllowedTime(
+competitionState.currentWord
+)
+
+});
+
+if(!result)return;
+
+const score =
+Number(result.score || 0);
+
+// ROUND SCORE
+let roundScore =
+Number(
+document.getElementById(
+"roundScore"
+).innerText || 0
 );
+
+roundScore += score;
+
+document.getElementById(
+"roundScore"
+).innerText =
+roundScore.toFixed(2);
+
+// TOTAL SCORE
+let totalScore =
+Number(
+document.getElementById(
+"totalScore"
+).innerText || 0
+);
+
+totalScore += score;
+
+document.getElementById(
+"totalScore"
+).innerText =
+totalScore.toFixed(2);
+
+// SOUNDS
+if(result.final_status === "correct"){
+
+if(
+competitionState.usedTime <=
+calculateAllowedTime(
+competitionState.currentWord
+)/2
+){
+
+playSound(sounds.applause);
+
+}else{
+
+playSound(sounds.correct);
+
+}
+
+}else{
+
+playSound(sounds.wrong);
+
+}
+
+disableVotingButtons();
+
+updateTeacherStatus(
+`Final Result: ${result.final_status.toUpperCase()}`
+);
+
+await saveCompetitionState();
+
+}
+catch(error){
+
+console.log(error);
+
+}
+
+}
+
+// ==========================================
+// NEXT WORD
+// ==========================================
+
+async function nextWord(){
+
+competitionState.currentWordIndex++;
+
+const stage =
+competitionState.stage;
+
+// ROUND COMPLETE
+if(
+competitionState.currentWordIndex >=
+stage.words_per_round
+){
+
+competitionState.currentWordIndex = 0;
+
+competitionState.currentStudentIndex++;
+
+playSound(
+sounds.roundFinish
+);
+
+// ALL PARTICIPANTS COMPLETE
+if(
+competitionState.currentStudentIndex >=
+competitionState.students.length
+){
+
+competitionState.currentStudentIndex = 0;
+
+competitionState.currentRound++;
+
+// COMPETITION COMPLETE
+if(
+competitionState.currentRound >
+stage.total_rounds
+){
+
+playSound(
+sounds.competitionFinish
+);
+
+updateTeacherStatus(
+"Competition Finished"
+);
+
+setTimeout(()=>{
+
+window.location =
+"leaderboard.html";
+
+},3000);
+
+return;
+
+}
+
+}
+
+}
+
+// RESET
+competitionState.started = false;
+
+competitionState.usedTime = 0;
+
+competitionState.timeLeft = 0;
+
+// LOAD NEXT
+prepareCurrentParticipant();
+
+await saveCompetitionState();
+
+updateTeacherStatus(
+"Next Word Ready"
+);
+
+}
+
+// ==========================================
+// NEXT PARTICIPANT
+// ==========================================
+
+async function nextParticipant(){
+
+competitionState.currentStudentIndex++;
+
+competitionState.currentWordIndex = 0;
+
+// RESET ROUND SCORE
+document.getElementById(
+"roundScore"
+).innerText = "0";
+
+// ALL PARTICIPANTS FINISHED
+if(
+competitionState.currentStudentIndex >=
+competitionState.students.length
+){
+
+competitionState.currentStudentIndex = 0;
+
+competitionState.currentRound++;
+
+if(
+competitionState.currentRound >
+competitionState.stage.total_rounds
+){
+
+updateTeacherStatus(
+"Competition Finished"
+);
+
+window.location =
+"leaderboard.html";
+
+return;
+
+}
+
+}
+
+prepareCurrentParticipant();
+
+await saveCompetitionState();
+
+updateTeacherStatus(
+"Next Participant Ready"
+);
+
+}
+
+// ==========================================
+// RESET PARTICIPANT
+// ==========================================
+
+function resetParticipant(){
+
+competitionState.currentWordIndex = 0;
+
+document.getElementById(
+"roundScore"
+).innerText = "0";
+
+prepareCurrentParticipant();
+
+updateTeacherStatus(
+"Participant Reset"
+);
+
+}
+
+// ==========================================
+// RESET COMPETITION
+// ==========================================
+
+async function resetCompetition(){
+
+const confirmed = confirm(
+"Reset competition?"
+);
+
+if(!confirmed)return;
+
+await api({
+action:"resetState"
+});
+
+location.reload();
+
+}
+
+// ==========================================
+// SAVE STATE
+// ==========================================
+
+async function saveCompetitionState(){
+
+if(
+!competitionState.competition ||
+!competitionState.stage
+){
+return;
+}
+
+await api({
+
+action:"updateState",
+
+competition_id:
+competitionState.competition.id,
+
+stage_number:
+competitionState.stage.stage_number,
+
+currentStudent:
+competitionState.currentStudentIndex,
+
+round:
+competitionState.currentRound,
+
+currentWordIndex:
+competitionState.currentWordIndex,
+
+timeLeft:
+competitionState.timeLeft,
+
+started:
+competitionState.started,
+
+score:
+document.getElementById(
+"roundScore"
+).innerText || 0,
+
+participant_done:false
+
+});
+
+}
+
+// ==========================================
+// RESTORE STATE
+// ==========================================
+
+async function restoreCompetitionState(){
+
+const res = await api({
+
+action:"getCompetitionRealtime",
+
+competition_id:
+competitionState.competition.id
+
+});
+
+if(!res)return;
+
+competitionState.currentStudentIndex =
+res.current_student_index || 0;
+
+competitionState.currentRound =
+res.current_round || 1;
+
+competitionState.currentWordIndex =
+res.current_word_index || 0;
+
+competitionState.timeLeft =
+res.time_left || 0;
+
+competitionState.started =
+res.started || false;
+
+}
+
+// ==========================================
+// REALTIME SYNC
+// ==========================================
+
+function startRealtimeSync(){
+
+setInterval(async()=>{
+
+if(
+!competitionState.competition
+){
+return;
+}
+
+const res = await api({
+
+action:"getCompetitionRealtime",
+
+competition_id:
+competitionState.competition.id
+
+});
+
+if(!res)return;
+
+if(!competitionState.started){
+
+competitionState.timeLeft =
+res.time_left || 0;
+
+updateTeacherTimer();
+
+}
+
+},1000);
+
+}
+
+// ==========================================
+// UI HELPERS
+// ==========================================
+
+function updateTeacherTimer(){
+
+const timer =
+document.getElementById("timer");
+
+if(timer){
+
+timer.innerText =
+competitionState.timeLeft;
+
+}
+
+}
+
+function updateTeacherStatus(text){
+
+const status =
+document.getElementById("status");
+
+if(status){
+
+status.innerText = text;
+
+}
+
+}
+
+// ==========================================
+// VOTING BUTTONS
+// ==========================================
+
+function disableVotingButtons(){
+
+[
+"correctBtn",
+"wrongBtn",
+"notspeltBtn"
+]
+.forEach(id=>{
+
+const btn =
+document.getElementById(id);
+
+if(btn){
+
+btn.disabled = true;
+
+}
+
+});
+
+}
+
+function enableVotingButtons(){
+
+[
+"correctBtn",
+"wrongBtn",
+"notspeltBtn"
+]
+.forEach(id=>{
+
+const btn =
+document.getElementById(id);
+
+if(btn){
+
+btn.disabled = false;
+
+}
+
+});
+
+}
+
+// ==========================================
+// MUSIC
+// ==========================================
+
+function toggleMusicPanel(){
+
+const panel =
+document.getElementById(
+"musicPanel"
+);
+
+panel.style.display =
+panel.style.display === "block"
+? "none"
+: "block";
+
+}
+
+function playMusic(src){
+
+backgroundMusic.pause();
+
+backgroundMusic =
+new Audio(src);
+
+backgroundMusic.loop = true;
+
+backgroundMusic.play();
+
+}
+
+function stopMusic(){
+
+backgroundMusic.pause();
+
+}
+
+// ==========================================
+// NAVIGATION
+// ==========================================
+
+function goHome(){
+
+window.location =
+"teacher-home.html";
+
+}
+
+function goLeaderboard(){
+
+window.location =
+"leaderboard.html";
+
+}

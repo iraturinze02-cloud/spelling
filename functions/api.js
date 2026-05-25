@@ -242,6 +242,7 @@ if (existing.length === 0 && activeStage.stage_number == 1){
         INSERT INTO word_attempts(
           student_id,
           competition_id,
+          stage_number,
           round_number,
           word,
           learner_answer,
@@ -253,6 +254,7 @@ if (existing.length === 0 && activeStage.stage_number == 1){
         VALUES(
           ${body.student_id},
           ${body.competition_id || null},
+          ${body.stage_number},
           ${body.round_number},
           ${body.word},
           ${body.learner_answer},
@@ -1025,6 +1027,84 @@ state:state[0] || null
 });
 
    }
+
+if (action === "finalizeVotes") {
+
+  const {
+    competition_id,
+    stage_number,
+    student_id,
+    word,
+    used_time,
+    time_allowed
+  } = body;
+
+  // 1. get all votes for this word
+  const votes = await sql`
+    SELECT vote
+    FROM judge_votes
+    WHERE competition_id=${competition_id}
+      AND stage_number=${stage_number}
+      AND student_id=${student_id}
+      AND word=${word}
+  `;
+
+  // 2. determine final result
+  let correct = 0;
+  let wrong = 0;
+  let notspelt = 0;
+
+  for (const v of votes) {
+    if (v.vote === "correct") correct++;
+    if (v.vote === "wrong") wrong++;
+    if (v.vote === "notspelt") notspelt++;
+  }
+
+  let final_status = "wrong";
+
+  if (correct >= wrong && correct >= notspelt) {
+    final_status = "correct";
+  } else if (notspelt > correct && notspelt > wrong) {
+    final_status = "notspelt";
+  }
+
+  // 3. score logic
+  let score = 0;
+
+  if (final_status === "correct") {
+    score = used_time <= (time_allowed / 2) ? 2 : 1;
+  }
+
+  // 4. save result
+  await sql`
+    INSERT INTO word_attempts(
+      student_id,
+      competition_id,
+      stage_number,
+      word,
+      score,
+      time_used,
+      time_allowed,
+      status
+    )
+    VALUES(
+      ${student_id},
+      ${competition_id},
+      ${stage_number},
+      ${word},
+      ${score},
+      ${used_time},
+      ${time_allowed},
+      ${final_status}
+    )
+  `;
+
+  return Response.json({
+    success: true,
+    final_status,
+    score
+  });
+}
 
     // =====================================================
     // DEFAULT

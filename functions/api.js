@@ -405,8 +405,7 @@ return Response.json({
 success:true,
 stage:stage[0] || null
 });
-}
-                            
+}                        
     // =====================================================
     // GET ACTIVE COMPETITION
     // =====================================================
@@ -678,4 +677,4 @@ action,
 error:error.message
 },{status:500});
 
-}                         }
+}                        }

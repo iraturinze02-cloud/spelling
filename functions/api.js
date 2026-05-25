@@ -601,7 +601,7 @@ if (action === "getStudentsWithGroups") {
         `;
       }
 
-      return response.json({
+      return Response.json({
         success: true,
         next_round: nextRound,
         qualified: selected
@@ -625,7 +625,7 @@ if (action === "getStudentsWithGroups") {
       `;
 
       if (nextStage.length === 0) {
-        return response.json({ success: true, message: "Competition finished" });
+        return Response.json({ success: true, message: "Competition finished" });
       }
 
       await sql`
@@ -646,7 +646,7 @@ if (action === "getStudentsWithGroups") {
         WHERE competition_id = ${competition_id}
       `;
 
-      return response.json({
+      return Response.json({
         success: true,
         next_stage: nextStage[0]
       });

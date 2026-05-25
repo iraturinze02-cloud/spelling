@@ -463,7 +463,7 @@ if(!student)return;
 
 await api({
 
-action:"submitJudgeVote",
+action:"saveJudgeVote",
 
 competition_id:
 competitionState.competition.id,
@@ -846,7 +846,7 @@ async function restoreCompetitionState(){
 
 const res = await api({
 
-action:"getCompetitionRealtime",
+action:"getCompetitionState",
 
 competition_id:
 competitionState.competition.id
@@ -888,7 +888,7 @@ return;
 
 const res = await api({
 
-action:"getCompetitionRealtime",
+action:"getCompetitionState",
 
 competition_id:
 competitionState.competition.id

@@ -587,7 +587,7 @@ document.getElementById("stageName")
 async function syncRealtime(){
 
 const res = await api({
-action:"getCompetitionRealtime",
+action:"getCompetitionState",
 competition_id:competition.id
 });
 
@@ -713,36 +713,31 @@ async function submitVote(vote){
 
 try{
 
-const student =
-competitionState.currentStudent;
+if(!currentState)return;
 
-if(!student)return;
-
-await api({
+const result = await api({
 
 action:"saveJudgeVote",
 
 competition_id:
-competitionState.competition.id,
+competition.id,
 
 stage_number:
-competitionState.stage.stage_number,
-  round_number:
-competitionState.currentRound,
+stage.stage_number,
+
+round_number:
+currentState.current_round,
 
 student_id:
-student.id,
+currentState.student_id,
 
 word:
-competitionState.currentWord,
+currentState.current_word,
 
 vote,
 
-judge_type:users.id
-
-used_time:
-competitionState.usedTime
-
+judge_id:
+localStorage.getItem("userId")
 
 });
 
@@ -753,7 +748,8 @@ judgeVoteSubmitted = true;
 disableVoting();
 
 document.getElementById("myVote")
-.innerText = vote.toUpperCase();
+.innerText =
+vote.toUpperCase();
 
 document.getElementById("voteTime")
 .innerText =
@@ -766,6 +762,14 @@ document.getElementById("status")
 }
 
 }
+catch(error){
+
+console.log(error);
+
+}
+
+}
+
 
 // ========================================
 // RESET LOCAL VOTE

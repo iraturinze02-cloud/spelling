@@ -361,7 +361,7 @@ if(competitionState.started)return;
   clearInterval(realtimeTimer);
 
 competitionState.started = true;
-  playMusic("sounds/tension.mp3");
+  
   competitionState.timeLeft =
 calculateAllowedTime(
 competitionState.currentWord

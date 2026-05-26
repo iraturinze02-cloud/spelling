@@ -675,27 +675,44 @@ document.getElementById("notspeltBtn")
 
 }
 
-// ========================================
+// ==========================================
 // SUBMIT VOTE
-// ========================================
+// ==========================================
 
 async function submitVote(vote){
 
-if(judgeVoteSubmitted)return;
+try{
 
-const result = await api({
+const student =
+competitionState.currentStudent;
 
-action:"submitJudgeVote",
+if(!student)return;
 
-competition_id:competition.id,
+await api({
 
-stage_number:stage.stage_number,
+action:"saveJudgeVote",
 
-student_id:currentState.student.id,
+competition_id:
+competitionState.competition.id,
 
-word:currentState.word,
+stage_number:
+competitionState.stage.stage_number,
+  round_number:
+competitionState.currentRound,
 
-vote
+student_id:
+student.id,
+
+word:
+competitionState.currentWord,
+
+vote,
+
+judge_type:users.id
+
+used_time:
+competitionState.usedTime
+
 
 });
 

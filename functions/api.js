@@ -1202,107 +1202,45 @@ state:state[0] || null
 });
 
    }
-    // =====================================================
-// ASSIGN DRAW
-// =====================================================
+if (action === "assignDraw") {
 
-if(action === "assignDraw"){
-
-try{
-
-// VALIDATION
-if(
-!body.student_id ||
-!body.group_id ||
-!body.draw_order ||
-!body.competition_id
-){
-
-return Response.json({
-success:false,
-message:"Missing required fields"
-},{status:400});
-
+if (
+  !body.student_id ||
+  !body.group_id ||
+  !body.draw_order ||
+  !body.competition_id ||
+  !body.stage_number
+) {
+  return Response.json({
+    success: false,
+    message: "Missing required fields"
+  }, { status: 400 });
 }
-
-
-// CHECK EXISTING DRAW
-const existing = await sql`
-
-SELECT id
-
-FROM student_draws
-
-WHERE competition_id=${body.competition_id}
-
-AND student_id=${body.student_id}
-
-LIMIT 1
-
-`;
-
-
-// UPDATE
-if(existing.length > 0){
 
 await sql`
 
-UPDATE student_draws
-
-SET
-
-group_id=${body.group_id},
-draw_order=${body.draw_order}
-
-WHERE competition_id=${body.competition_id}
-
-AND student_id=${body.student_id}
+INSERT INTO student_draws (
+  competition_id,
+  stage_number,
+  student_id,
+  group_id,
+  draw_order
+)
+VALUES (
+  ${body.competition_id},
+  ${body.stage_number},
+  ${body.student_id},
+  ${body.group_id},
+  ${body.draw_order}
+)
+ON CONFLICT (competition_id, stage_number, student_id)
+DO UPDATE SET
+  group_id = EXCLUDED.group_id,
+  draw_order = EXCLUDED.draw_order
 
 `;
 
-}
-else{
-
-// INSERT
-await sql`
-
-INSERT INTO student_draws(
-
-competition_id,
-student_id,
-group_id,
-draw_order
-
-)
-
-VALUES(
-
-${body.competition_id},
-${body.student_id},
-${body.group_id},
-${body.draw_order}
-
-)
-
-`;
-
-}
-
-return Response.json({
-success:true
-});
-
-}
-catch(error){
-
-console.log(error);
-
-return Response.json({
-success:false,
-message:error.message
-},{status:500});
-
-}
+return Response.json({ success: true });
 
   }
 

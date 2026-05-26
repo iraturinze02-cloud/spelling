@@ -653,73 +653,8 @@ totalScores[student.id] || 0;
 }
 
 
-/* =========================
-NEXT PARTICIPANT
-========================= */
 
-function nextParticipant(){
 
-currentStudentIndex++;
-
-currentWordIndex = 0;
-roundScore = 0;
-
-if(currentStudentIndex >= students.length){
-
-currentStudentIndex = 0;
-currentRound++;
-
-if(currentRound > stage.total_rounds){
-
-updateStatus("Competition Finished");
-
-window.location =
-"leaderboard.html";
-
-return;
-
-}
-
-}
-
-showStudent();
-showWord();
-
-disableVoting();
-
-}
-
-/* =========================
-RESET PARTICIPANT
-========================= */
-
-function resetParticipant(){
-
-currentWordIndex = 0;
-roundScore = 0;
-
-showStudent();
-showWord();
-
-}
-
-/* =========================
-RESET COMPETITION
-========================= */
-
-async function resetCompetition(){
-
-if(!confirm("Reset competition?")){
-return;
-}
-
-await api({
-action:"resetState"
-});
-
-location.reload();
-
-}
 
 /* =========================
 STATUS
@@ -732,39 +667,6 @@ document.getElementById("status")
 
 }
 
-/* =========================
-MUSIC
-========================= */
-
-function toggleMusicPanel(){
-
-const panel =
-document.getElementById("musicPanel");
-
-panel.style.display =
-panel.style.display === "block"
-? "none"
-: "block";
-
-}
-
-function playMusic(src){
-
-music.pause();
-
-music = new Audio(src);
-
-music.loop = true;
-
-music.play();
-
-}
-
-function stopMusic(){
-
-music.pause();
-
-}
 
 /* =========================
 NAVIGATION

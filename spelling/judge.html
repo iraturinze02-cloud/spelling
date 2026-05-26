@@ -591,32 +591,13 @@ action:"getCompetitionRealtime",
 competition_id:competition.id
 });
 
-if(!res)return;
+if(!res || !res.success)return;
 
-currentState = {
+currentState = res;
 
-...res.state,
-
-round:
-res.state.current_round,
-
-word:
-res.state.current_word,
-
-student_id:
-res.state.current_student_id,
-
-word_index:
-res.state.current_word_index,
-
-time_left:
-res.state.time_left
-
-};
 updateUI();
 
 }
-
 // ========================================
 // UPDATE UI
 // ========================================

@@ -593,8 +593,26 @@ competition_id:competition.id
 
 if(!res)return;
 
-currentState = res.state;
+currentState = {
 
+...res.state,
+
+round:
+res.state.current_round,
+
+word:
+res.state.current_word,
+
+student_id:
+res.state.current_student_id,
+
+word_index:
+res.state.current_word_index,
+
+time_left:
+res.state.time_left
+
+};
 updateUI();
 
 }
@@ -673,6 +691,24 @@ document.getElementById("votingState")
 // ENABLE VOTING
 // ========================================
 
+function disableVoting(){
+
+document.getElementById("correctBtn")
+.disabled = true;
+
+document.getElementById("wrongBtn")
+.disabled = true;
+
+// NOT SPELT ALWAYS ENABLED
+document.getElementById("notspeltBtn")
+.disabled = false;
+
+}
+
+// ========================================
+// DISABLE VOTING
+// ========================================
+
 function enableVoting(){
 
 if(judgeVoteSubmitted)return;
@@ -683,32 +719,14 @@ document.getElementById("correctBtn")
 document.getElementById("wrongBtn")
 .disabled = false;
 
+// NOT SPELT ALWAYS ENABLED
 document.getElementById("notspeltBtn")
 .disabled = false;
 
 }
-
-// ========================================
-// DISABLE VOTING
-// ========================================
-
-function disableVoting(){
-
-document.getElementById("correctBtn")
-.disabled = true;
-
-document.getElementById("wrongBtn")
-.disabled = true;
-
-document.getElementById("notspeltBtn")
-.disabled = true;
-
-}
-
 // ==========================================
 // SUBMIT VOTE
 // ==========================================
-
 async function submitVote(vote){
 
 try{
@@ -726,13 +744,13 @@ stage_number:
 stage.stage_number,
 
 round_number:
-currentState.current_round,
+currentState.round,
 
 student_id:
-currentState.student_id,
+currentState.student.id,
 
 word:
-currentState.current_word,
+currentState.word,
 
 vote,
 
@@ -768,7 +786,7 @@ console.log(error);
 
 }
 
-}
+  }
 
 
 // ========================================

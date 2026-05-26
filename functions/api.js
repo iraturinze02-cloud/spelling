@@ -852,12 +852,32 @@ if (action === "ensureStageReady") {
     qualified_count: qualified.length
   });
   }
-    // =====================================================
+// =====================================================
 // SAVE JUDGE VOTE
 // =====================================================
 
 if(action==="saveJudgeVote"){
 
+// REMOVE OLD VOTE FROM SAME JUDGE
+await sql`
+
+DELETE FROM judge_votes
+
+WHERE competition_id=${body.competition_id}
+
+AND stage_number=${body.stage_number}
+
+AND round_number=${body.round_number}
+
+AND student_id=${body.student_id}
+
+AND word=${body.word}
+
+AND judge_id=${body.judge_id}
+
+`;
+
+// INSERT NEW VOTE
 await sql`
 
 INSERT INTO judge_votes(
@@ -890,7 +910,7 @@ return Response.json({
 success:true
 });
 
-}
+    }
 
 // =====================================================
 // GET WORD VOTES

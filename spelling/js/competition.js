@@ -355,8 +355,10 @@ return 20;
 // ==========================================
 
 async function startWord(){
+  clearInterval(realtimeTimer);
 
 if(competitionState.started)return;
+  clearInterval(realtimeTimer);
 
 competitionState.started = true;
   playMusic("sounds/tension.mp3");
@@ -364,6 +366,7 @@ competitionState.started = true;
 calculateAllowedTime(
 competitionState.currentWord
 );
+  updateTeacherTimer();
 
 competitionState.usedTime = 0;
 
@@ -448,6 +451,7 @@ await saveCompetitionState();
 async function stopTimer(){
 
 clearInterval(realtimeTimer);
+  realtimeTimer = null;
 
 competitionState.started = false;
 
@@ -970,8 +974,7 @@ function disableVotingButtons(){
 
 [
 "correctBtn",
-"wrongBtn",
-"notspeltBtn"
+"wrongBtn"
 ]
 .forEach(id=>{
 
@@ -986,7 +989,17 @@ btn.disabled = true;
 
 });
 
+// NOT SPELT ALWAYS ENABLED
+const notspelt =
+document.getElementById("notspeltBtn");
+
+if(notspelt){
+
+notspelt.disabled = false;
+
 }
+
+                        }
 
 function enableVotingButtons(){
 
@@ -1009,7 +1022,6 @@ btn.disabled = false;
 });
 
 }
-
 // ==========================================
 // MUSIC
 // ==========================================

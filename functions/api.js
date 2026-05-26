@@ -548,45 +548,166 @@ stage:stage[0] || null
     judges
   });
     }
-    if (action === "getStudentDraws") {
-
-  const students = await sql`
-    SELECT
-      s.id,
-      s.full_name,
-      d.draw_order,
-      g.group_number
-    FROM students s
-    LEFT JOIN student_draws d ON s.id = d.student_id
-    LEFT JOIN word_groups g ON d.group_id = g.id
-    ORDER BY d.draw_order
-  `;
-
-  return Response.json({
-    success: true,
-    students
-  });
-          }
     
-if (action === "getStudentsWithGroups") {
+    if(action === "getStudentDraws"){
 
-  const students = await sql`
-    SELECT
-      s.id,
-      s.full_name,
-      s.gender,
-      d.draw_order,
-      g.group_number
-    FROM students s
-    LEFT JOIN student_draws d ON s.id = d.student_id
-    LEFT JOIN word_groups g ON d.group_id = g.id
-    ORDER BY s.full_name
-  `;
+// ACTIVE STAGE
+const stage = await sql`
 
-  return Response.json({
-    success: true,
-    students
-  });
+SELECT *
+
+FROM competition_stages
+
+WHERE competition_id=${body.competition_id}
+
+AND status='active'
+
+LIMIT 1
+
+`;
+
+if(stage.length === 0){
+
+return Response.json({
+success:false,
+students:[]
+});
+
+}
+
+const activeStage =
+stage[0].stage_number;
+
+
+// ONLY ACTIVE PARTICIPANTS
+const students = await sql`
+
+SELECT
+
+s.id,
+s.full_name,
+s.gender,
+
+d.draw_order,
+
+d.group_id,
+
+g.group_number,
+
+sp.status
+
+FROM student_stage_progress sp
+
+JOIN students s
+ON s.id = sp.student_id
+
+LEFT JOIN student_draws d
+ON d.student_id = s.id
+AND d.competition_id = sp.competition_id
+
+LEFT JOIN word_groups g
+ON g.id = d.group_id
+
+WHERE sp.competition_id=${body.competition_id}
+
+AND sp.stage_number=${activeStage}
+
+AND sp.status='active'
+
+ORDER BY
+
+COALESCE(d.draw_order,9999),
+s.full_name ASC
+
+`;
+
+return Response.json({
+
+success:true,
+students
+
+});
+
+}
+// =====================================================
+// GET STUDENTS WITH GROUPS
+// =====================================================
+
+if(action === "getStudentsWithGroups"){
+
+// ACTIVE STAGE
+const stage = await sql`
+
+SELECT *
+
+FROM competition_stages
+
+WHERE competition_id=${body.competition_id}
+
+AND status='active'
+
+LIMIT 1
+
+`;
+
+if(stage.length === 0){
+
+return Response.json({
+success:false,
+message:"No active stage"
+});
+
+}
+
+const activeStage =
+stage[0].stage_number;
+
+
+// ONLY ACTIVE STUDENTS
+const students = await sql`
+
+SELECT
+
+s.id,
+s.full_name,
+s.gender,
+
+sp.stage_number,
+sp.status,
+
+d.draw_order,
+d.group_id
+
+FROM student_stage_progress sp
+
+JOIN students s
+ON s.id = sp.student_id
+
+LEFT JOIN student_draws d
+ON d.student_id = s.id
+AND d.competition_id = sp.competition_id
+
+WHERE sp.competition_id=${body.competition_id}
+
+AND sp.stage_number=${activeStage}
+
+AND sp.status='active'
+
+ORDER BY
+
+COALESCE(d.draw_order,9999),
+s.full_name ASC
+
+`;
+
+return Response.json({
+
+success:true,
+students,
+active_stage:activeStage
+
+});
+
 }
 
     if (action === "getStagesByCompetition") {
@@ -1081,6 +1202,109 @@ state:state[0] || null
 });
 
    }
+    // =====================================================
+// ASSIGN DRAW
+// =====================================================
+
+if(action === "assignDraw"){
+
+try{
+
+// VALIDATION
+if(
+!body.student_id ||
+!body.group_id ||
+!body.draw_order ||
+!body.competition_id
+){
+
+return Response.json({
+success:false,
+message:"Missing required fields"
+},{status:400});
+
+}
+
+
+// CHECK EXISTING DRAW
+const existing = await sql`
+
+SELECT id
+
+FROM student_draws
+
+WHERE competition_id=${body.competition_id}
+
+AND student_id=${body.student_id}
+
+LIMIT 1
+
+`;
+
+
+// UPDATE
+if(existing.length > 0){
+
+await sql`
+
+UPDATE student_draws
+
+SET
+
+group_id=${body.group_id},
+draw_order=${body.draw_order}
+
+WHERE competition_id=${body.competition_id}
+
+AND student_id=${body.student_id}
+
+`;
+
+}
+else{
+
+// INSERT
+await sql`
+
+INSERT INTO student_draws(
+
+competition_id,
+student_id,
+group_id,
+draw_order
+
+)
+
+VALUES(
+
+${body.competition_id},
+${body.student_id},
+${body.group_id},
+${body.draw_order}
+
+)
+
+`;
+
+}
+
+return Response.json({
+success:true
+});
+
+}
+catch(error){
+
+console.log(error);
+
+return Response.json({
+success:false,
+message:error.message
+},{status:500});
+
+}
+
+  }
 
 if (action === "finalizeVotes") {
 

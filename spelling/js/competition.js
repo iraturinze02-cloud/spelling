@@ -17,7 +17,7 @@ warning:new Audio("sounds/warning.mp3"),
 
 timeout:new Audio("sounds/timeout.mp3"),
 
-correct:new Audio("sounds/correct.mp3"),
+correct:new Audio("sounds/good.mp3"),
 
 wrong:new Audio("sounds/wrong.mp3"),
 
@@ -25,7 +25,16 @@ applause:new Audio("sounds/applause.mp3"),
 
 roundFinish:new Audio("sounds/round-finish.mp3"),
 
-competitionFinish:new Audio("sounds/competition-finish.mp3")
+competitionFinish:new Audio("sounds/competition-finish.mp3"),
+  //Music
+  welcome:new Audio("sounds/welcome.mp3"),
+
+tension:new Audio("sounds/tension.mp3"),
+
+victory:new Audio("sounds/victory.mp3"),
+
+background:new Audio("sounds/background.mp3")
+
 
 };
 
@@ -129,6 +138,7 @@ if(!competitionState.competition){
 updateTeacherStatus(
 "No active competition"
 );
+  playMusic("sounds/welcome.mp3");
 
 return;
 
@@ -349,6 +359,11 @@ async function startWord(){
 if(competitionState.started)return;
 
 competitionState.started = true;
+  playMusic("sounds/tension.mp3");
+  competitionState.timeLeft =
+calculateAllowedTime(
+competitionState.currentWord
+);
 
 competitionState.usedTime = 0;
 
@@ -730,6 +745,7 @@ competitionState.stage.total_rounds
 updateTeacherStatus(
 "Competition Finished"
 );
+  playMusic("sounds/victory.mp3");
 
 window.location =
 "leaderboard.html";
@@ -741,6 +757,7 @@ return;
 }
 
 prepareCurrentParticipant();
+  playMusic("sounds/background.mp3");
 
 await saveCompetitionState();
 
@@ -842,7 +859,6 @@ participant_done:false
 // ==========================================
 // RESTORE STATE
 // ==========================================
-
 async function restoreCompetitionState(){
 
 const res = await api({
@@ -854,22 +870,24 @@ competitionState.competition.id
 
 });
 
-if(!res)return;
+if(!res || !res.state)return;
+
+const state = res.state;
 
 competitionState.currentStudentIndex =
-res.current_student_index || 0;
+state.current_student_index || 0;
 
 competitionState.currentRound =
-res.current_round || 1;
+state.current_round || 1;
 
 competitionState.currentWordIndex =
-res.current_word_index || 0;
+state.current_word_index || 0;
 
 competitionState.timeLeft =
-res.time_left || 0;
+state.time_left || 0;
 
 competitionState.started =
-res.started || false;
+state.started || false;
 
 }
 
@@ -896,12 +914,12 @@ competitionState.competition.id
 
 });
 
-if(!res)return;
+if(!res || !res.state)return;
 
 if(!competitionState.started){
 
 competitionState.timeLeft =
-res.time_left || 0;
+res.state.time_left || 0;
 
 updateTeacherTimer();
 
@@ -1012,14 +1030,15 @@ function playMusic(src){
 
 backgroundMusic.pause();
 
-backgroundMusic =
-new Audio(src);
+backgroundMusic.currentTime = 0;
+
+backgroundMusic.src = src;
 
 backgroundMusic.loop = true;
 
 backgroundMusic.play();
 
-}
+  }
 
 function stopMusic(){
 

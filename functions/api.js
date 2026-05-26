@@ -1033,54 +1033,63 @@ if (action === "finalizeVotes") {
   const {
     competition_id,
     stage_number,
+    round_number,
     student_id,
     word,
     used_time,
     time_allowed
   } = body;
 
-  // 1. get all votes for this word
+  // 1. get all votes
   const votes = await sql`
     SELECT vote
     FROM judge_votes
     WHERE competition_id=${competition_id}
       AND stage_number=${stage_number}
       AND student_id=${student_id}
+      AND round_number=${round_number}
       AND word=${word}
   `;
 
-  // 2. determine final result
   let correct = 0;
   let wrong = 0;
   let notspelt = 0;
 
   for (const v of votes) {
+
     if (v.vote === "correct") correct++;
+
     if (v.vote === "wrong") wrong++;
+
     if (v.vote === "notspelt") notspelt++;
   }
 
   let final_status = "wrong";
 
-  if (correct >= wrong && correct >= notspelt) {
+  if (correct > wrong && correct > notspelt) {
     final_status = "correct";
-  } else if (notspelt > correct && notspelt > wrong) {
+  }
+  else if (notspelt > correct && notspelt > wrong) {
     final_status = "notspelt";
   }
 
-  // 3. score logic
   let score = 0;
 
   if (final_status === "correct") {
-    score = used_time <= (time_allowed / 2) ? 2 : 1;
+
+    score =
+      used_time <= (time_allowed / 2)
+      ? 2
+      : 1;
   }
 
-  // 4. save result
+  // SAVE RESULT
   await sql`
     INSERT INTO word_attempts(
       student_id,
       competition_id,
       stage_number,
+      round_number,
       word,
       score,
       time_used,
@@ -1091,6 +1100,7 @@ if (action === "finalizeVotes") {
       ${student_id},
       ${competition_id},
       ${stage_number},
+      ${round_number},
       ${word},
       ${score},
       ${used_time},
@@ -1100,11 +1110,11 @@ if (action === "finalizeVotes") {
   `;
 
   return Response.json({
-    success: true,
+    success:true,
     final_status,
     score
   });
-}
+  }
 
     // =====================================================
     // DEFAULT

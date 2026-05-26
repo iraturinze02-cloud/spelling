@@ -298,7 +298,7 @@ Loading students...
 
 <script>
 
-// ========================================
+  // ========================================
 // LOAD STUDENTS
 // ========================================
 
@@ -306,6 +306,7 @@ async function loadStudents(){
 
 try{
 
+// ACTIVE COMPETITION
 const competitionRes =
 await fetch(
 "/api",
@@ -350,7 +351,7 @@ const competition_id =
 competitionData.competition.id;
 
 
-// GET STUDENTS
+// LOAD STUDENTS
 const res =
 await fetch(
 "/api",
@@ -360,8 +361,11 @@ headers:{
 "Content-Type":"application/json"
 },
 body:JSON.stringify({
+
 action:"getStudentsWithGroups",
+
 competition_id
+
 })
 }
 );
@@ -373,6 +377,7 @@ const students =
 data.students || [];
 
 
+// EMPTY STATE
 if(students.length === 0){
 
 document.getElementById(
@@ -397,6 +402,7 @@ return;
 }
 
 
+// BUILD TABLE
 let html = "";
 
 students.forEach(student=>{
@@ -497,10 +503,7 @@ Failed to load students
 
 }
 
-}
-
-
-
+  }
 // ========================================
 // SAVE DRAW
 // ========================================

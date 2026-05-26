@@ -497,6 +497,36 @@ let competition = null;
 let stage = null;
 let currentState = null;
 let judgeVoteSubmitted = false;
+let competitionState = {
+
+competition:null,
+
+stage:null,
+
+students:[],
+
+wordGroups:[],
+
+words:[],
+
+currentStudentIndex:0,
+
+currentRound:1,
+
+currentWordIndex:0,
+
+currentStudent:null,
+
+currentWord:"",
+
+timeLeft:0,
+
+usedTime:0,
+
+started:false
+
+};
+
 
 // ========================================
 // INIT

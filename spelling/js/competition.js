@@ -485,6 +485,8 @@ competitionState.competition.id,
 
 stage_number:
 competitionState.stage.stage_number,
+  round_number:
+competitionState.currentRound,
 
 student_id:
 student.id,

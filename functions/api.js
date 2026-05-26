@@ -374,24 +374,58 @@ if (existing.length === 0 && activeStage.stage_number == 1){
     // =====================================================
     // UPDATE COMPETITION STATE
     // =====================================================
-    if (action === "updateState") {
+if (action === "updateState") {
 
-      await sql`
-        UPDATE competition_state
-        SET
-          current_student_index=${body.currentStudent},
-          current_round=${body.round},
-          current_word_index=${body.currentWordIndex},
-          time_left=${body.timeLeft},
-          started=${body.started},
-          score=${body.score},
-          participant_done=${body.participant_done},
-          stage_number=${body.stage_number}
-        WHERE competition_id=${body.competition_id}
-      `;
+await sql`
 
-      return Response.json({ success: true });
-    }
+INSERT INTO competition_state(
+
+competition_id,
+stage_number,
+current_student_index,
+current_round,
+current_word_index,
+time_left,
+started,
+score,
+participant_done
+
+)
+
+VALUES(
+
+${body.competition_id},
+${body.stage_number},
+${body.currentStudent},
+${body.round},
+${body.currentWordIndex},
+${body.timeLeft},
+${body.started},
+${body.score},
+${body.participant_done}
+
+)
+
+ON CONFLICT (competition_id)
+
+DO UPDATE SET
+
+stage_number=EXCLUDED.stage_number,
+current_student_index=EXCLUDED.current_student_index,
+current_round=EXCLUDED.current_round,
+current_word_index=EXCLUDED.current_word_index,
+time_left=EXCLUDED.time_left,
+started=EXCLUDED.started,
+score=EXCLUDED.score,
+participant_done=EXCLUDED.participant_done
+
+`;
+
+return Response.json({
+success:true
+});
+
+  }
 
 // =====================================================
 // RESET STATE

@@ -255,7 +255,7 @@ if (existing.length === 0 && activeStage.stage_number == 1){
           ${body.student_id},
           ${body.competition_id || null},
           ${body.stage_number},
-          ${body.current_number},
+          ${body.round_number},
           ${body.word},
           ${body.learner_answer},
           ${body.score},

@@ -74,7 +74,7 @@ box-sizing:border-box;
 
 .certificate{
 
-transform:scale(.75);
+/*transform:scale(.75);*/
 
 transform-origin:top center;
 
@@ -88,7 +88,7 @@ margin-bottom:-150px;
 
 .certificate{
 
-transform:scale(.55);
+/*transform:scale(.55);*/
 
 margin-bottom:-250px;
 
@@ -595,25 +595,32 @@ document.getElementById("cert"+index)
 
 function downloadCert(){
 
-let cert=document.querySelector(".certificate.active");
+let cert = document.querySelector(".certificate.active");
+
+// DO NOT change layout sizing
+// only ensure visibility
+cert.style.display = "block";
+
+setTimeout(()=>{
 
 html2canvas(cert,{
-scale:3,
-width:1123,
-height:794
-})
+    scale:3,
+    useCORS:true,
+    backgroundColor:"#ffffff",
+    width:1123,
+    height:794,
+    windowWidth:1123,
+    windowHeight:794
+}).then(canvas=>{
 
-.then(canvas=>{
-
-let link=document.createElement("a");
-
-link.download="YoungSpellersCertificate.png";
-
-link.href=canvas.toDataURL("image/png");
-
-link.click();
+    let link=document.createElement("a");
+    link.download="YoungSpellersCertificate.png";
+    link.href=canvas.toDataURL("image/png");
+    link.click();
 
 });
+
+}, 100);
 
 }
 

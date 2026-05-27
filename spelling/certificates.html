@@ -1,0 +1,296 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Young Spellers Contest Certificates</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+body{
+font-family:Arial,sans-serif;
+margin:0;
+padding:20px;
+background:#eef2f7;
+text-align:center;
+}
+h1{margin-bottom:20px}
+
+.buttons{
+display:flex;
+flex-wrap:wrap;
+justify-content:center;
+gap:10px;
+margin-bottom:20px;
+}
+
+button{
+padding:12px 18px;
+border:none;
+border-radius:25px;
+cursor:pointer;
+font-weight:bold;
+}
+
+.navBtn{
+background:#1e3a8a;
+color:white;
+}
+
+.download{
+background:#047857;
+color:white;
+margin-top:15px;
+}
+
+.certificate{
+display:none;
+width:1000px;
+max-width:100%;
+margin:auto;
+background:white;
+padding:40px;
+border:12px solid gold;
+border-radius:20px;
+box-shadow:0 0 25px rgba(0,0,0,0.2);
+position:relative;
+overflow:hidden;
+}
+
+.active{display:block;}
+
+.corner{
+position:absolute;
+width:180px;
+height:180px;
+border-radius:50%;
+background:rgba(255,215,0,0.15);
+}
+
+.top-left{top:-80px;left:-80px;}
+.bottom-right{bottom:-80px;right:-80px;}
+
+.title{
+font-size:42px;
+font-weight:bold;
+color:#1e3a8a;
+}
+
+.subtitle{
+font-size:26px;
+color:#444;
+margin-top:10px;
+}
+
+.award{
+font-size:34px;
+color:#b45309;
+margin:25px;
+font-weight:bold;
+}
+
+.nameLine{
+margin:35px auto;
+width:70%;
+border-bottom:2px solid black;
+padding-bottom:10px;
+font-size:30px;
+}
+
+.footer{
+display:flex;
+justify-content:space-between;
+margin-top:70px;
+}
+
+.sign{
+border-top:2px solid black;
+width:200px;
+padding-top:10px;
+}
+
+.logo{
+font-size:20px;
+font-weight:bold;
+color:#1e3a8a;
+}
+.nameLine{
+margin:35px auto;
+width:70%;
+border-bottom:3px dashed #1e3a8a;
+padding-bottom:10px;
+font-size:30px;
+cursor:pointer;
+background:#f9fafb;
+border-radius:10px;
+}
+.nameLine{
+margin:35px auto;
+width:70%;
+border-bottom:2px solid black;
+padding-bottom:10px;
+font-size:30px;
+}
+
+background:#eef2f7;
+background:linear-gradient(
+135deg,
+#dbeafe,
+#fef3c7,
+#dcfce7,
+#fde2e4
+);
+
+</style>
+</head>
+<body>
+
+<h1>YOUNG SPELLERS CONTEST CERTIFICATES</h1>
+
+<div class="buttons">
+<button class="navBtn" onclick="showCert(0)">Champion</button>
+<button class="navBtn" onclick="showCert(1)">Vice Champion</button>
+<button class="navBtn" onclick="showCert(2)">Best Speller</button>
+<button class="navBtn" onclick="showCert(3)">Participation</button>
+</div>
+
+<div id="cert0" class="certificate active"></div>
+<div id="cert1" class="certificate"></div>
+<div id="cert2" class="certificate"></div>
+<div id="cert3" class="certificate"></div>
+
+<button class="download" onclick="downloadCert()">Download Certificate</button>
+
+<script>
+
+const data=[
+
+{
+title:"🏆 CHAMPION",
+place:"1ST PLACE",
+color:"#FFD700", // Gold
+message:`
+For achieving <b>1st Place</b> in the Young Spellers Contest.
+Your exceptional spelling skills, determination,
+confidence, and outstanding performance have made
+you the Champion among young spellers.
+
+Keep aiming high and continue inspiring others
+through excellence.
+`
+},
+
+{
+title:"🥈 VICE CHAMPION",
+place:"2ND PLACE",
+color:"#C0C0C0", // Silver
+message:`
+For achieving <b>2nd Place</b> in the Young Spellers Contest.
+Your dedication, effort, and remarkable spelling
+ability have brought you excellent success.
+
+Continue believing in yourself and striving for
+greater achievements.
+`
+},
+
+{
+title:"⭐ BEST SPELLER",
+place:"3RD PLACE",
+color:"#60A5FA", // Friendly Blue
+message:`
+For achieving <b>3rd Place</b> and demonstrating
+excellent spelling ability in the Young Spellers Contest.
+
+Your language skills and determination are impressive.
+Continue learning, reading, and reaching new heights.
+`
+},
+
+{
+title:"🎉 CERTIFICATE OF PARTICIPATION",
+place:"THANK YOU",
+color:"#4ADE80", // Friendly Green
+message:`
+Thank you for participating in the Young Spellers Contest.
+
+Your effort, courage, enthusiasm, and willingness
+to learn are appreciated.
+
+Every great achievement begins with participation.
+Keep learning and keep shining.
+`
+}
+
+];
+
+
+for(let i=0;i<data.length;i++){
+
+document.getElementById("cert"+i).style.borderColor=
+data[i].color;
+
+document.getElementById("cert"+i).innerHTML=`
+
+<div class="corner top-left"
+style="background:${data[i].color}40;">
+</div>
+
+<div class="corner bottom-right"
+style="background:${data[i].color}40;">
+</div>
+
+<div class="logo">
+YOUNG SPELLERS CONTEST
+</div>
+
+<div class="title">
+CERTIFICATE
+</div>
+
+<div class="subtitle">
+This Certificate is Proudly Presented To
+</div>
+
+<div class="nameLine"
+contenteditable="true">
+Tap here to enter learner name
+</div>
+
+<div class="award"
+style="color:${data[i].color}">
+${data[i].title}
+</div>
+
+<div style="
+font-size:26px;
+font-weight:bold;
+margin-bottom:20px;
+color:#1e3a8a;">
+${data[i].place}
+</div>
+
+<p style="
+font-size:22px;
+line-height:1.8;
+padding:0 40px;">
+${data[i].message}
+</p>
+
+<div class="footer">
+
+<div class="sign">
+Organizer Signature
+</div>
+
+<div class="sign">
+Date
+</div>
+
+</div>
+
+`;
+
+}
+</body>
+</html>

@@ -42,19 +42,58 @@ background:#047857;
 color:white;
 margin-top:15px;
 }
-
 .certificate{
+
 display:none;
-width:1000px;
-max-width:100%;
+
+/* A4 Landscape proportion */
+width:1123px;
+height:794px;
+
 margin:auto;
 background:white;
+
 padding:40px;
+
 border:12px solid gold;
+
 border-radius:20px;
+
 box-shadow:0 0 25px rgba(0,0,0,0.2);
+
 position:relative;
+
 overflow:hidden;
+
+box-sizing:border-box;
+
+}
+
+/* For phones and tablets */
+@media(max-width:1200px){
+
+.certificate{
+
+transform:scale(.75);
+
+transform-origin:top center;
+
+margin-bottom:-150px;
+
+}
+
+}
+
+@media(max-width:800px){
+
+.certificate{
+
+transform:scale(.55);
+
+margin-bottom:-250px;
+
+}
+
 }
 
 .active{display:block;}
@@ -66,7 +105,13 @@ height:180px;
 border-radius:50%;
 background:rgba(255,215,0,0.15);
 }
-
+.nameLine{
+margin:35px auto;
+width:70%;
+border-bottom:2px solid black;
+padding-bottom:10px;
+font-size:30px;
+}
 .top-left{top:-80px;left:-80px;}
 .bottom-right{bottom:-80px;right:-80px;}
 
@@ -75,13 +120,27 @@ font-size:42px;
 font-weight:bold;
 color:#1e3a8a;
 }
-
+.nameLine{
+margin:35px auto;
+width:70%;
+border-bottom:2px solid black;
+padding-bottom:10px;
+font-size:30px;
+}
 .subtitle{
 font-size:26px;
 color:#444;
 margin-top:10px;
 }
+background:#eef2f7;
 
+background:linear-gradient(
+135deg,
+#dbeafe,
+#fef3c7,
+#dcfce7,
+#fde2e4
+);
 .award{
 font-size:34px;
 color:#b45309;
@@ -114,32 +173,211 @@ font-size:20px;
 font-weight:bold;
 color:#1e3a8a;
 }
-.nameLine{
-margin:35px auto;
-width:70%;
-border-bottom:3px dashed #1e3a8a;
-padding-bottom:10px;
-font-size:30px;
-cursor:pointer;
-background:#f9fafb;
-border-radius:10px;
-}
-.nameLine{
-margin:35px auto;
-width:70%;
-border-bottom:2px solid black;
-padding-bottom:10px;
-font-size:30px;
+.badgeRibbon{
+
+position:absolute;
+
+top:20px;
+right:30px;
+
+font-size:80px;
+
+animation:floatBadge 2s infinite alternate;
+
 }
 
-background:#eef2f7;
-background:linear-gradient(
-135deg,
-#dbeafe,
-#fef3c7,
-#dcfce7,
-#fde2e4
+@keyframes floatBadge{
+
+from{
+transform:translateY(0px);
+}
+
+to{
+transform:translateY(-10px);
+}
+
+}
+/* Main badge */
+
+.badge{
+
+position:absolute;
+
+top:100px;
+right:40px;
+
+font-size:60px;
+
+background:white;
+
+width:90px;
+height:90px;
+
+display:flex;
+justify-content:center;
+align-items:center;
+
+border-radius:50%;
+
+box-shadow:
+0 6px 20px rgba(0,0,0,.15);
+
+z-index:5;
+
+}
+
+
+/* Ribbon */
+
+.badgeRibbon{
+
+position:absolute;
+
+top:20px;
+right:50px;
+
+font-size:70px;
+
+z-index:6;
+
+animation:floatRibbon 2s infinite alternate;
+
+}
+
+
+@keyframes floatRibbon{
+
+from{
+transform:translateY(0px);
+}
+
+to{
+transform:translateY(-8px);
+}
+
+}
+
+
+/* Special Champion/Best Speller designs */
+
+.specialDesign{
+
+position:absolute;
+
+top:70px;
+
+left:1%;
+
+transform:translateX(-50%);
+
+font-size:55px;
+
+display:flex;
+
+gap:15px;
+
+padding:12px 30px;
+
+border-radius:40px;
+
+background:rgba(255,255,255,.6);
+
+backdrop-filter:blur(10px);
+
+box-shadow:
+0 5px 15px rgba(0,0,0,.1);
+
+z-index:4;
+
+}
+
+
+/* Champion stars effect */
+
+.champion{
+
+background:
+linear-gradient(
+90deg,
+rgba(255,215,0,.2),
+rgba(255,255,255,.7),
+rgba(255,215,0,.2)
 );
+
+}
+
+
+/* Best speller theme */
+
+.bestSpeller{
+
+background:
+linear-gradient(
+90deg,
+rgba(96,165,250,.2),
+rgba(255,255,255,.7),
+rgba(96,165,250,.2)
+);
+
+}
+
+
+/* Award title */
+
+.award{
+
+font-size:36px;
+
+font-weight:bold;
+
+margin-top:50px;
+
+margin-bottom:20px;
+
+text-shadow:
+2px 2px 8px rgba(0,0,0,.1);
+
+}
+
+
+/* Certificate text */
+
+.text{
+
+font-size:22px;
+
+line-height:1.8;
+
+padding:0 70px;
+
+color:#374151;
+
+}
+
+
+/* Name area */
+
+.nameLine{
+
+margin:35px auto;
+
+width:70%;
+
+padding:15px;
+
+font-size:30px;
+
+border-radius:15px;
+
+background:#f8fafc;
+
+border:3px dashed #2563eb;
+
+cursor:pointer;
+
+font-weight:bold;
+
+}
 
 </style>
 </head>
@@ -162,48 +400,90 @@ background:linear-gradient(
 <button class="download" onclick="downloadCert()">Download Certificate</button>
 
 <script>
-
 const data=[
-
 {
 title:"🏆 CHAMPION",
 place:"1ST PLACE",
-color:"#FFD700", // Gold
+
+color:"linear-gradient(135deg,#FFD700,#F59E0B,#FDE68A)",
+
 message:`
 For achieving <b>1st Place</b> in the Young Spellers Contest.
-Your exceptional spelling skills, determination,
-confidence, and outstanding performance have made
-you the Champion among young spellers.
 
-Keep aiming high and continue inspiring others
-through excellence.
+Your extraordinary spelling ability,
+determination, confidence, and outstanding
+performance have earned you the title of Champion.
+
+You are a true shining star.
+Continue aiming high and inspiring others.
+`,
+
+icon:"👑",
+ribbon:"🏆",
+
+specialDesign:`
+<div style="
+position:absolute;
+top:10px;
+left:90%;
+transform:translateX(-50%);
+font-size:70px;">
+👑 ⭐ 🏆 ⭐ 👑
+</div>
 `
 },
 
 {
 title:"🥈 VICE CHAMPION",
 place:"2ND PLACE",
-color:"#C0C0C0", // Silver
+
+color:"linear-gradient(135deg,#C0C0C0,#A78BFA,#93C5FD)",
+
 message:`
 For achieving <b>2nd Place</b> in the Young Spellers Contest.
-Your dedication, effort, and remarkable spelling
-ability have brought you excellent success.
 
-Continue believing in yourself and striving for
-greater achievements.
-`
+Your remarkable spelling skills, confidence,
+hard work, and determination have brought
+you outstanding success.
+
+You are a shining star of excellence.
+Keep learning, keep growing, and keep believing
+in yourself because great achievements await you.
+`,
+
+icon:"🌟",
+ribbon:"🎖️"
+
 },
 
 {
-title:"⭐ BEST SPELLER",
+title:"📘 BEST SPELLER",
 place:"3RD PLACE",
-color:"#60A5FA", // Friendly Blue
+
+color:"linear-gradient(135deg,#60A5FA,#A5F3FC,#93C5FD)",
+
 message:`
 For achieving <b>3rd Place</b> and demonstrating
-excellent spelling ability in the Young Spellers Contest.
+excellent spelling mastery and language skills.
 
-Your language skills and determination are impressive.
-Continue learning, reading, and reaching new heights.
+Your dedication and love for learning
+have made you one of our outstanding young spellers.
+
+Keep reading, learning, and growing.
+`,
+
+icon:"📚",
+ribbon:"✏️",
+
+specialDesign:`
+<div style="
+position:absolute;
+top:20px;
+left:50%;
+transform:translateX(-50%);
+font-size:55px;">
+📚 ✏️ 🔤 ✏️ 📚
+</div>
 `
 },
 
@@ -227,7 +507,7 @@ Keep learning and keep shining.
 
 for(let i=0;i<data.length;i++){
 
-document.getElementById("cert"+i).style.borderColor=
+document.getElementById("cert"+i).style.borderImage=
 data[i].color;
 
 document.getElementById("cert"+i).innerHTML=`
@@ -238,6 +518,18 @@ style="background:${data[i].color}40;">
 
 <div class="corner bottom-right"
 style="background:${data[i].color}40;">
+</div>
+<div class="badgeRibbon">
+${data[i].ribbon || ""}
+</div>
+
+<div class="badge">
+${data[i].icon || ""}
+</div>
+<div class="specialDesign
+${i===0?"champion":""}
+${i===2?"bestSpeller":""}">
+${data[i].specialDesign || ""}
 </div>
 
 <div class="logo">
@@ -292,6 +584,40 @@ Date
 `;
 
 }
+
+
+function showCert(index){
+document.querySelectorAll(".certificate")
+.forEach(x=>x.classList.remove("active"));
+document.getElementById("cert"+index)
+.classList.add("active");
+}
+
+function downloadCert(){
+
+let cert=document.querySelector(".certificate.active");
+
+html2canvas(cert,{
+scale:3,
+width:1123,
+height:794
+})
+
+.then(canvas=>{
+
+let link=document.createElement("a");
+
+link.download="YoungSpellersCertificate.png";
+
+link.href=canvas.toDataURL("image/png");
+
+link.click();
+
+});
+
+}
+
 </script>
+
 </body>
 </html>

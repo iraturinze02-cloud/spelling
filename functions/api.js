@@ -1771,6 +1771,42 @@ vote_count:votes[0]?.total || 0
 });
 
   }
+    if (action === "getLiveStudents") {
+
+  const students = await sql`
+
+    SELECT
+      s.id,
+      s.full_name,
+      s.gender,
+      sp.stage_number,
+      d.group_id,
+      d.draw_order
+
+    FROM student_stage_progress sp
+
+    JOIN students s ON s.id = sp.student_id
+
+    LEFT JOIN student_draws d
+      ON d.student_id = s.id
+      AND d.competition_id = sp.competition_id
+      AND d.stage_number = sp.stage_number
+
+    WHERE sp.competition_id = ${body.competition_id}
+      AND sp.stage_number = ${body.stage_number}
+      AND sp.status = 'active'
+
+    ORDER BY
+      COALESCE(d.draw_order, 9999),
+      s.full_name ASC
+
+  `;
+
+  return Response.json({
+    success: true,
+    students
+  });
+    }
 
     // =====================================================
     // DEFAULT

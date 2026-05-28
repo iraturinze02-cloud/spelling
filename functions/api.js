@@ -209,7 +209,8 @@ if (existing.length === 0 && activeStage.stage_number == 1){
     // =====================================================
     // CREATE WORD GROUP
     // =====================================================
-  if(action === "createWordGroup"){
+  
+if(action === "createWordGroup"){
 
 try{
 
@@ -252,11 +253,12 @@ message:"Stage not found"
 
 }
 
+
+// REQUIRED WORDS
 const requiredWords =
-(
+
 stage[0].total_rounds *
-stage[0].words_per_round
-);
+stage[0].words_per_round;
 
 
 // VALIDATE WORD COUNT
@@ -267,12 +269,33 @@ return Response.json({
 success:false,
 
 message:
-
 `Exactly ${requiredWords} words required`
 
 },{status:400});
 
 }
+
+
+// NEXT GROUP NUMBER
+const lastGroup = await sql`
+
+SELECT
+
+COALESCE(
+MAX(group_number),
+0
+) AS max
+
+FROM word_groups
+
+WHERE competition_id=${body.competition_id}
+
+AND stage_number=${body.stage_number}
+
+`;
+
+const nextGroupNumber =
+lastGroup[0].max + 1;
 
 
 // CREATE GROUP
@@ -281,14 +304,16 @@ const group = await sql`
 INSERT INTO word_groups(
 
 competition_id,
-stage_number
+stage_number,
+group_number
 
 )
 
 VALUES(
 
 ${body.competition_id},
-${body.stage_number}
+${body.stage_number},
+${nextGroupNumber}
 
 )
 
@@ -312,8 +337,7 @@ word
 VALUES(
 
 ${group[0].id},
-${word}
-
+${word.trim()}
 )
 
 `;
@@ -342,7 +366,7 @@ message:error.message
 
 }
 
-}
+   }
 
     // =====================================================
     // INSERT WORD ATTEMPT

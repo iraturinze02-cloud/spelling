@@ -1202,47 +1202,157 @@ state:state[0] || null
 });
 
    }
+// =====================================================
+// ASSIGN DRAW
+// =====================================================
+
 if (action === "assignDraw") {
 
-if (
-  !body.student_id ||
-  !body.group_id ||
-  !body.draw_order ||
-  !body.competition_id ||
-  !body.stage_number
-) {
-  return Response.json({
-    success: false,
-    message: "Missing required fields"
-  }, { status: 400 });
-}
+  try {
 
-await sql`
+    // VALIDATION
+    if (
+      !body.student_id ||
+      !body.group_id ||
+      !body.draw_order ||
+      !body.competition_id ||
+      !body.stage_number
+    ) {
 
-INSERT INTO student_draws (
-  competition_id,
-  stage_number,
-  student_id,
-  group_id,
-  draw_order
-)
-VALUES (
-  ${body.competition_id},
-  ${body.stage_number},
-  ${body.student_id},
-  ${body.group_id},
-  ${body.draw_order}
-)
-ON CONFLICT (competition_id, stage_number, student_id)
-DO UPDATE SET
-  group_id = EXCLUDED.group_id,
-  draw_order = EXCLUDED.draw_order
+      return Response.json({
+        success: false,
+        message: "Missing required fields"
+      }, { status: 400 });
 
-`;
+    }
 
-return Response.json({ success: true });
+    // CONVERT TO INTEGER
+    const competition_id =
+      parseInt(body.competition_id);
+
+    const stage_number =
+      parseInt(body.stage_number);
+
+    const student_id =
+      parseInt(body.student_id);
+
+    const group_id =
+      parseInt(body.group_id);
+
+    const draw_order =
+      parseInt(body.draw_order);
+
+    // EXTRA VALIDATION
+    if (
+      isNaN(competition_id) ||
+      isNaN(stage_number) ||
+      isNaN(student_id) ||
+      isNaN(group_id) ||
+      isNaN(draw_order)
+    ) {
+
+      return Response.json({
+        success: false,
+        message: "Invalid numeric values"
+      }, { status: 400 });
+
+    }
+
+    // CHECK IF DRAW EXISTS
+    const existing = await sql`
+
+      SELECT id
+
+      FROM student_draws
+
+      WHERE competition_id=${competition_id}
+
+      AND stage_number=${stage_number}
+
+      AND student_id=${student_id}
+
+      LIMIT 1
+
+    `;
+
+    // =========================================
+    // UPDATE EXISTING
+    // =========================================
+
+    if (existing.length > 0) {
+
+      await sql`
+
+        UPDATE student_draws
+
+        SET
+
+          group_id=${group_id},
+          draw_order=${draw_order}
+
+        WHERE competition_id=${competition_id}
+
+        AND stage_number=${stage_number}
+
+        AND student_id=${student_id}
+
+      `;
+
+    }
+
+    // =========================================
+    // INSERT NEW
+    // =========================================
+
+    else {
+
+      await sql`
+
+        INSERT INTO student_draws (
+
+          competition_id,
+          stage_number,
+          student_id,
+          group_id,
+          draw_order
+
+        )
+
+        VALUES (
+
+          ${competition_id},
+          ${stage_number},
+          ${student_id},
+          ${group_id},
+          ${draw_order}
+
+        )
+
+      `;
+
+    }
+
+    return Response.json({
+      success: true
+    });
 
   }
+
+  catch (error) {
+
+    console.log(
+      "ASSIGN DRAW ERROR:",
+      error
+    );
+
+    return Response.json({
+      success: false,
+      message: error.message
+    }, { status: 500 });
+
+  }
+
+}
 
 if (action === "finalizeVotes") {
 

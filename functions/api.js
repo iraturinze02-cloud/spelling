@@ -209,29 +209,140 @@ if (existing.length === 0 && activeStage.stage_number == 1){
     // =====================================================
     // CREATE WORD GROUP
     // =====================================================
-    if (action === "createWordGroup") {
+  if(action === "createWordGroup"){
 
-      if (!body.words || body.words.length !== 9) {
-        return Response.json({
-          success: false,
-          message: "Exactly 9 words required"
-        }, { status: 400 });
-      }
+try{
 
-      const group = await sql`
-        INSERT INTO word_groups DEFAULT VALUES
-        RETURNING *
-      `;
+// VALIDATION
+if(
+!body.competition_id ||
+!body.stage_number ||
+!body.words
+){
 
-      for (const word of body.words) {
-        await sql`
-          INSERT INTO words(group_id, word)
-          VALUES(${group[0].id}, ${word})
-        `;
-      }
+return Response.json({
+success:false,
+message:"Missing required fields"
+},{status:400});
 
-      return Response.json({ success: true, group: group[0] });
-    }
+}
+
+
+// GET STAGE RULES
+const stage = await sql`
+
+SELECT *
+
+FROM competition_stages
+
+WHERE competition_id=${body.competition_id}
+
+AND stage_number=${body.stage_number}
+
+LIMIT 1
+
+`;
+
+if(stage.length === 0){
+
+return Response.json({
+success:false,
+message:"Stage not found"
+},{status:400});
+
+}
+
+const requiredWords =
+(
+stage[0].total_rounds *
+stage[0].words_per_round
+);
+
+
+// VALIDATE WORD COUNT
+if(body.words.length !== requiredWords){
+
+return Response.json({
+
+success:false,
+
+message:
+
+`Exactly ${requiredWords} words required`
+
+},{status:400});
+
+}
+
+
+// CREATE GROUP
+const group = await sql`
+
+INSERT INTO word_groups(
+
+competition_id,
+stage_number
+
+)
+
+VALUES(
+
+${body.competition_id},
+${body.stage_number}
+
+)
+
+RETURNING *
+
+`;
+
+
+// INSERT WORDS
+for(const word of body.words){
+
+await sql`
+
+INSERT INTO words(
+
+group_id,
+word
+
+)
+
+VALUES(
+
+${group[0].id},
+${word}
+
+)
+
+`;
+
+}
+
+
+return Response.json({
+
+success:true,
+group:group[0]
+
+});
+
+}
+catch(error){
+
+console.log(error);
+
+return Response.json({
+
+success:false,
+message:error.message
+
+},{status:500});
+
+}
+
+}
 
     // =====================================================
     // INSERT WORD ATTEMPT
@@ -516,24 +627,79 @@ stage:stage[0] || null
     stage: result[0] || null
   });
     }
-    if (action === "getWordGroups") {
+if(action === "getWordGroups"){
 
-  const groups = await sql`
-    SELECT
-      g.id,
-      g.group_number,
-      json_agg(w.word) AS words
-    FROM word_groups g
-    LEFT JOIN words w ON g.id = w.group_id
-    GROUP BY g.id
-    ORDER BY g.group_number
-  `;
+try{
 
-  return Response.json({
-    success: true,
-    groups
-  });
-    }
+if(
+!body.competition_id ||
+!body.stage_number
+){
+
+return Response.json({
+success:false,
+message:"competition_id and stage_number required"
+},{status:400});
+
+}
+
+const groups = await sql`
+
+SELECT
+
+g.id,
+g.group_number,
+g.stage_number,
+g.competition_id,
+
+COALESCE(
+json_agg(w.word)
+FILTER (WHERE w.word IS NOT NULL),
+'[]'
+) AS words
+
+FROM word_groups g
+
+LEFT JOIN words w
+ON g.id = w.group_id
+
+WHERE g.competition_id=${body.competition_id}
+
+AND g.stage_number=${body.stage_number}
+
+GROUP BY
+
+g.id,
+g.group_number,
+g.stage_number,
+g.competition_id
+
+ORDER BY g.group_number ASC
+
+`;
+
+return Response.json({
+
+success:true,
+groups
+
+});
+
+}
+catch(error){
+
+console.log(error);
+
+return Response.json({
+
+success:false,
+message:error.message
+
+},{status:500});
+
+}
+
+}
     if (action === "getJudges") {
 
   const judges = await sql`
@@ -663,7 +829,7 @@ const activeStage =
 stage[0].stage_number;
 
 
-// ONLY ACTIVE STUDENTS
+// ACTIVE STUDENTS ONLY
 const students = await sql`
 
 SELECT
@@ -686,6 +852,7 @@ ON s.id = sp.student_id
 LEFT JOIN student_draws d
 ON d.student_id = s.id
 AND d.competition_id = sp.competition_id
+AND d.stage_number = sp.stage_number
 
 WHERE sp.competition_id=${body.competition_id}
 

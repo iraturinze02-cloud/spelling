@@ -1780,20 +1780,15 @@ vote_count:votes[0]?.total || 0
       s.full_name,
       s.gender,
       sp.stage_number,
-
       d.group_id,
-
-      COALESCE(
-        d.draw_order::INTEGER,
-        9999
-      ) AS draw_order
+      d.draw_order
 
     FROM student_stage_progress sp
 
     JOIN students s
       ON s.id = sp.student_id
 
-    LEFT JOIN student_draws d
+    JOIN student_draws d
       ON d.student_id = sp.student_id
       AND d.competition_id = sp.competition_id
       AND d.stage_number = sp.stage_number
@@ -1803,8 +1798,8 @@ vote_count:votes[0]?.total || 0
       AND sp.status = 'active'
 
     ORDER BY
-      COALESCE(d.draw_order::INTEGER, 9999) ASC,
-      s.full_name ASC
+      d.draw_order ASC,
+      s.id ASC
 
   `;
 
@@ -1812,7 +1807,7 @@ vote_count:votes[0]?.total || 0
     success: true,
     students
   });
-    }
+}
 
     // =====================================================
     // DEFAULT

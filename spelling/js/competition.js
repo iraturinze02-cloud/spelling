@@ -252,11 +252,9 @@ document.getElementById(
 student.full_name;
 
 // FIND WORD GROUP
-const group =
-competitionState.wordGroups.find(
-g => g.group_number == student.group_number
+const group = competitionState.wordGroups.find(
+  g => g.id == student.group_id
 );
-
 competitionState.words =
 group?.words || [];
 

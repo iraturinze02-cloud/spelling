@@ -117,118 +117,105 @@ sound.currentTime = 0;
 // ==========================================
 
 window.addEventListener(
-"load",
-initializeCompetition
+  "load",
+  initializeCompetition
 );
 
 async function initializeCompetition(){
 
-try{
+  try{
 
-// ACTIVE COMPETITION
-const competitionRes = await api({
-action:"getActiveCompetition"
-});
+    // ==========================================
+    // ACTIVE COMPETITION
+    // ==========================================
+    const competitionRes = await api({
+      action: "getActiveCompetition"
+    });
 
-competitionState.competition =
-competitionRes?.competition || null;
+    competitionState.competition =
+      competitionRes?.competition || null;
 
-if(!competitionState.competition){
+    if(!competitionState.competition){
 
-updateTeacherStatus(
-"No active competition"
-);
-  playMusic("sounds/welcome.mp3");
+      updateTeacherStatus("No active competition");
+      playMusic("sounds/welcome.mp3");
+      return;
+    }
 
-return;
+    // SHOW COMPETITION NAME
+    document.getElementById(
+      "competitionTitle"
+    ).innerText =
+      competitionState.competition.competition_name;
 
-}
+    // ==========================================
+    // ACTIVE STAGE
+    // ==========================================
+    const stageRes = await api({
+      action: "getActiveStage",
+      competition_id: competitionState.competition.id
+    });
 
-// SHOW COMPETITION NAME
-document.getElementById(
-"competitionTitle"
-).innerText =
-competitionState.competition.competition_name;
+    competitionState.stage =
+      stageRes?.stage || null;
 
-// ACTIVE STAGE
-const stageRes = await api({
+    if(!competitionState.stage){
 
-action:"getActiveStage",
+      updateTeacherStatus("No active stage");
+      return;
+    }
 
-competition_id:
-competitionState.competition.id
+    // SHOW STAGE
+    document.getElementById(
+      "stageTitle"
+    ).innerText =
+      `Stage ${competitionState.stage.stage_number} • ${competitionState.stage.stage_name}`;
 
-});
+    // ==========================================
+    // ✅ FIXED: LOAD LIVE STUDENTS (IMPORTANT)
+    // ==========================================
+    const studentsRes = await api({
+      action: "getLiveStudents",
+      competition_id: competitionState.competition.id,
+      stage_number: competitionState.stage.stage_number
+    });
 
-competitionState.stage =
-stageRes?.stage || null;
+    competitionState.students =
+      studentsRes?.students || [];
 
-if(!competitionState.stage){
+    // ==========================================
+    // LOAD WORD GROUPS
+    // ==========================================
+    const wordsRes = await api({
+      action: "getWordGroups",
+      competition_id: competitionState.competition.id,
+      stage_number: competitionState.stage.stage_number
+    });
 
-updateTeacherStatus(
-"No active stage"
-);
+    competitionState.wordGroups =
+      wordsRes?.groups || [];
 
-return;
+    // ==========================================
+    // RESTORE STATE
+    // ==========================================
+    await restoreCompetitionState();
 
-}
+    // PREPARE FIRST PARTICIPANT
+    prepareCurrentParticipant();
 
-// SHOW STAGE
-document.getElementById(
-"stageTitle"
-).innerText =
-`Stage ${competitionState.stage.stage_number} • ${competitionState.stage.stage_name}`;
+    // START SYNC
+    startRealtimeSync();
 
-// LOAD STUDENTS
-const studentsRes = await api({
+    updateTeacherStatus("Competition Ready");
 
-action:"getStudents",
+  }
+  catch(error){
 
-competition_id:
-competitionState.competition.id,
+    console.log(error);
+    updateTeacherStatus("Failed to initialize");
 
-stage_number:
-competitionState.stage.stage_number
-
-});
-
-competitionState.students =
-studentsRes?.students || [];
-
-// LOAD WORD GROUPS
-const wordsRes = await api({
-action:"getWordGroups"
-});
-
-competitionState.wordGroups =
-wordsRes?.groups || [];
-
-// RESTORE SAVED STATE
-await restoreCompetitionState();
-
-// PREPARE CURRENT STUDENT
-prepareCurrentParticipant();
-
-// START REALTIME SYNC
-startRealtimeSync();
-
-// UPDATE STATUS
-updateTeacherStatus(
-"Competition Ready"
-);
-
-}
-catch(error){
-
-console.log(error);
-
-updateTeacherStatus(
-"Failed to initialize"
-);
-
-}
-
-}
+  }
+      }
 
 // ==========================================
 // PREPARE PARTICIPANT

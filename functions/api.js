@@ -1780,8 +1780,13 @@ vote_count:votes[0]?.total || 0
       s.full_name,
       s.gender,
       sp.stage_number,
-      COALESCE(d.group_id, NULL) AS group_id,
-      COALESCE(d.draw_order, 9999) AS draw_order
+
+      d.group_id,
+
+      COALESCE(
+        d.draw_order::INTEGER,
+        9999
+      ) AS draw_order
 
     FROM student_stage_progress sp
 
@@ -1798,7 +1803,7 @@ vote_count:votes[0]?.total || 0
       AND sp.status = 'active'
 
     ORDER BY
-      COALESCE(d.draw_order, 9999) ASC,
+      COALESCE(d.draw_order::INTEGER, 9999) ASC,
       s.full_name ASC
 
   `;
@@ -1807,7 +1812,7 @@ vote_count:votes[0]?.total || 0
     success: true,
     students
   });
-  }
+    }
 
     // =====================================================
     // DEFAULT

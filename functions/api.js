@@ -651,7 +651,10 @@ stage:stage[0] || null
     stage: result[0] || null
   });
     }
-if(action === "getWordGroups"){
+//===================================
+//  Get Word Groups
+//===================================
+    if(action === "getWordGroups"){
 
 try{
 
@@ -677,9 +680,18 @@ g.stage_number,
 g.competition_id,
 
 COALESCE(
-json_agg(w.word)
-FILTER (WHERE w.word IS NOT NULL),
+
+json_agg(
+w.word
+ORDER BY w.id
+)
+
+FILTER (
+WHERE w.word IS NOT NULL
+),
+
 '[]'
+
 ) AS words
 
 FROM word_groups g
@@ -724,6 +736,9 @@ message:error.message
 }
 
 }
+  //=======================================
+    //GET JUDGES
+  //=========================================
     if (action === "getJudges") {
 
   const judges = await sql`

@@ -224,7 +224,7 @@ async function initializeCompetition(){
 // PREPARE PARTICIPANT
 // ==========================================
 
-function prepareCurrentParticipant(){
+async function prepareCurrentParticipant(){
 
 const student =
 competitionState.students[
@@ -256,7 +256,7 @@ document.getElementById(
 student.full_name;
 
 // FIND WORD GROUP
-loadParticipantWords(student.group_number);
+await loadParticipantWords(student.group_number);
 }
 
 // ==========================================
@@ -298,9 +298,14 @@ document.getElementById("roundInfo").innerText =
 
 // TIMER
 
-competitionState.timeLeft = allowed;
+// TIMER
+competitionState.timeLeft =
+calculateAllowedTime(word);
+
+competitionState.usedTime = 0;
 
 updateTeacherTimer();
+
 disableVotingButtons();
 
 }
@@ -330,18 +335,21 @@ return 20;
 // ==========================================
 
 async function startWord(){
-  clearInterval(realtimeTimer);
+
+clearInterval(realtimeTimer);
 
 if(competitionState.started)return;
-  clearInterval(realtimeTimer);
 
 competitionState.started = true;
-  
-  competitionState.timeLeft = 0;
-  
-  updateTeacherTimer();
+
+competitionState.timeLeft =
+calculateAllowedTime(
+competitionState.currentWord
+);
 
 competitionState.usedTime = 0;
+
+updateTeacherTimer();
 
 disableVotingButtons();
 
@@ -350,7 +358,6 @@ updateTeacherStatus(
 );
 
 await saveCompetitionState();
-
 realtimeTimer = setInterval(async()=>{
 
 competitionState.timeLeft--;
@@ -656,6 +663,12 @@ console.log(error);
 
 async function nextWord(){
 
+clearInterval(realtimeTimer);
+
+competitionState.started = false;
+
+competitionState.usedTime = 0;
+
 competitionState.currentWordIndex++;
 
 const stage =
@@ -713,20 +726,24 @@ return;
 }
 
 // LOAD NEXT PARTICIPANT
-prepareCurrentParticipant();
+await prepareCurrentParticipant();
 
 }
 else{
 
-// JUST NEXT WORD
+// LOAD NEXT WORD
 prepareCurrentWord();
 
 }
 
-// RESET TIMER
-competitionState.started = false;
+// IMPORTANT:
+// ALWAYS SHOW EXPECTED TIME
+competitionState.timeLeft =
+calculateAllowedTime(
+competitionState.currentWord
+);
 
-competitionState.usedTime = 0;
+updateTeacherTimer();
 
 await saveCompetitionState();
 
@@ -734,7 +751,7 @@ updateTeacherStatus(
 "Next Word Ready"
 );
 
-}
+  }
 
 // ==========================================
 // NEXT PARTICIPANT

@@ -936,13 +936,17 @@ state.started || false;
 // REALTIME SYNC
 // ==========================================
 
+// ==========================================
+// REALTIME SYNC
+// ==========================================
+
 function startRealtimeSync(){
 
 setInterval(async()=>{
 
-if(
-!competitionState.competition
-){
+try{
+
+if(!competitionState.competition){
 return;
 }
 
@@ -957,12 +961,25 @@ competitionState.competition.id
 
 if(!res || !res.state)return;
 
+// ONLY sync when timer is NOT running
 if(!competitionState.started){
 
+// IMPORTANT:
+// never overwrite valid local time with 0
+if(res.state.time_left > 0){
+
 competitionState.timeLeft =
-res.state.time_left || 0;
+res.state.time_left;
 
 updateTeacherTimer();
+
+}
+
+}
+
+}catch(error){
+
+console.log(error);
 
 }
 

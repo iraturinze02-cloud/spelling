@@ -252,16 +252,7 @@ document.getElementById(
 student.full_name;
 
 // FIND WORD GROUP
-const group = competitionState.wordGroups.find(
-  g => Number(g.group_number) === Number(student.group_number)
-);
-competitionState.words =
-group?.words || [];
-
-// PREPARE WORD
-prepareCurrentWord();
-
-}
+loadParticipantWords(student.group_id);
 
 // ==========================================
 // PREPARE WORD
@@ -451,7 +442,43 @@ updateTeacherStatus(
 await saveCompetitionState();
 
 }
+// ==========================================
+// Load Words
+// ==========================================
+  
+async function loadParticipantWords(groupId){
 
+try{
+
+const res = await api({
+
+action:"getWordsByGroup",
+
+group_id:groupId,
+
+competition_id:
+competitionState.competition.id,
+
+stage_number:
+competitionState.stage.stage_number
+
+});
+
+competitionState.words =
+res.words.map(w => w.word);
+
+prepareCurrentWord();
+
+}
+catch(error){
+
+console.log(error);
+
+competitionState.words = [];
+
+}
+
+}
 // ==========================================
 // SUBMIT VOTE
 // ==========================================

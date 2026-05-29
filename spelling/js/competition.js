@@ -82,17 +82,15 @@ started:false
 
 function playSound(sound){
 
-try{
+try {
+    audio.currentTime = 0;
+    audio.play();
 
-if(!sound)return;
-
-sound.pause();
-
-sound.currentTime = 0;
-
-sound.play();
-
-}
+    setTimeout(() => {
+      audio.pause();
+      audio.currentTime = 0;
+    }, 5000);
+  
 catch(error){
 
 console.log(error);

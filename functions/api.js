@@ -1832,6 +1832,38 @@ if (action === "getLiveStudents") {
     students
   });
 }
+    // ==========================================
+//  Get Participant Words
+// ==========================================
+
+    if(action === "getWordsByGroup"){
+
+const words = await sql`
+
+SELECT
+w.word
+
+FROM words w
+
+JOIN word_groups g
+ON g.id = w.group_id
+
+WHERE g.id = ${body.group_id}
+
+AND g.competition_id = ${body.competition_id}
+
+AND g.stage_number = ${body.stage_number}
+
+ORDER BY w.id ASC
+
+`;
+
+return Response.json({
+success:true,
+words
+});
+
+}
     // =====================================================
     // DEFAULT
     // =====================================================

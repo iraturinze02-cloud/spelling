@@ -1656,141 +1656,96 @@ if (final_status === "correct") {
     // =====================================================
 // GET COMPETITION REALTIME
 // =====================================================
+if (action === "getCompetitionRealtime") {
 
-if(action==="getCompetitionRealtime"){
+  const stateRes = await sql`
+    SELECT *
+    FROM competition_state
+    WHERE competition_id=${body.competition_id}
+    LIMIT 1
+  `;
 
-const stateRes = await sql`
+  if (stateRes.length === 0) {
+    return Response.json({ success: false });
+  }
 
-SELECT *
-FROM competition_state
-WHERE competition_id=${body.competition_id}
-LIMIT 1
+  const state = stateRes[0];
 
-`;
+  // ACTIVE STAGE
+  const stageRes = await sql`
+    SELECT *
+    FROM competition_stages
+    WHERE competition_id=${body.competition_id}
+      AND status='active'
+    LIMIT 1
+  `;
 
-if(stateRes.length===0){
+  const stage = stageRes[0];
 
-return Response.json({
-success:false
-});
+  // STUDENTS (FIXED: must include competition + stage draw relation)
+  const students = await sql`
+    SELECT
+      s.*,
+      d.draw_order,
+      d.group_id,
+      g.group_number
+    FROM students s
+    JOIN student_draws d
+      ON s.id = d.student_id
+      AND d.competition_id = ${body.competition_id}
+      AND d.stage_number = ${stage.stage_number}
+    LEFT JOIN word_groups g
+      ON g.id = d.group_id
+    ORDER BY d.draw_order ASC
+  `;
 
-}
+  const student = students[state.current_student_index];
 
-const state = stateRes[0];
+  let words = [];
 
-// ACTIVE STAGE
-const stageRes = await sql`
+  if (student) {
 
-SELECT *
-FROM competition_stages
-WHERE competition_id=${body.competition_id}
-AND status='active'
-LIMIT 1
+    // ✅ FIXED: use group_id (NOT group_number)
+    const group = await sql`
+      SELECT w.word
+      FROM words w
+      JOIN word_groups g
+        ON g.id = w.group_id
+      WHERE g.id = ${student.group_id}
+      ORDER BY w.id ASC
+    `;
 
-`;
+    words = group.map(w => w.word);
+  }
 
-const stage = stageRes[0];
+  const wordIndex =
+    ((state.current_round - 1) * stage.words_per_round) +
+    state.current_word_index;
 
-// STUDENTS
-const students = await sql`
+  const currentWord = words[wordIndex] || "FINISHED";
 
-SELECT
-s.*,
-d.draw_order,
-g.group_number
+  const votes = await sql`
+    SELECT COUNT(*)::int AS total
+    FROM judge_votes
+    WHERE competition_id=${body.competition_id}
+      AND student_id=${student?.id || 0}
+      AND round_number=${state.current_round}
+      AND word=${currentWord}
+  `;
 
-FROM students s
-
-LEFT JOIN student_draws d
-ON s.id=d.student_id
-
-LEFT JOIN word_groups g
-ON d.group_id=g.id
-
-WHERE s.competition_id=${body.competition_id}
-
-ORDER BY d.draw_order ASC
-
-`;
-
-const student =
-students[state.current_student_index];
-
-let words = [];
-
-if(student){
-
-const group = await sql`
-
-SELECT
-w.word
-
-FROM words w
-
-JOIN word_groups g
-ON g.id=w.group_id
-
-WHERE g.group_number=${student.group_number}
-
-ORDER BY w.id ASC
-
-`;
-
-words = group.map(w=>w.word);
-
-}
-
-const wordIndex =
-(
-(state.current_round - 1)
-*
-stage.words_per_round
-)
-+
-state.current_word_index;
-
-const currentWord =
-words[wordIndex] || "FINISHED";
-
-const votes = await sql`
-
-SELECT COUNT(*)::int AS total
-
-FROM judge_votes
-
-WHERE competition_id=${body.competition_id}
-AND student_id=${student?.id || 0}
-AND round_number=${state.current_round}
-AND word=${currentWord}
-
-`;
-
-return Response.json({
-
-success:true,
-
-student,
-
-student_id:student?.id || null,
-
-round:state.current_round,
-
-current_round:state.current_round,
-
-word:currentWord,
-
-current_word:currentWord,
-
-word_index:state.current_word_index,
-
-time_left:state.time_left,
-
-started:state.started,
-
-vote_count:votes[0]?.total || 0
-
-});
-
+  return Response.json({
+    success: true,
+    student,
+    student_id: student?.id || null,
+    round: state.current_round,
+    current_round: state.current_round,
+    word: currentWord,
+    current_word: currentWord,
+    word_index: state.current_word_index,
+    time_left: state.time_left,
+    started: state.started,
+    vote_count: votes[0]?.total || 0
+  });
   }
     // =====================================================
     // GET STUDENTS IN A COMPETITION 

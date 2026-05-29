@@ -297,7 +297,8 @@ document.getElementById("roundInfo").innerText =
 `${competitionState.currentRound}/${stage.total_rounds}`;
 
 // TIMER
-competitionState.timeLeft = calculateAllowedTime(word);
+
+competitionState.timeLeft = allowed;
 
 updateTeacherTimer();
 disableVotingButtons();
@@ -726,8 +727,6 @@ prepareCurrentWord();
 competitionState.started = false;
 
 competitionState.usedTime = 0;
-
-competitionState.timeLeft = 0;
 
 await saveCompetitionState();
 

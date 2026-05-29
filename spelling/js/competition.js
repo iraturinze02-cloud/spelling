@@ -80,24 +80,29 @@ started:false
 // AUDIO HELPERS
 // ==========================================
 
-function playSound(sound){
+function playSound(sound, duration = null) {
 
-try {
-    audio.currentTime = 0;
-    audio.play();
+  try {
 
-    setTimeout(() => {
-      audio.pause();
-      audio.currentTime = 0;
-    }, 5000);
-  
-catch(error){
+    if (!sound) return;
 
-console.log(error);
+    sound.pause();
+    sound.currentTime = 0;
+    sound.play();
 
-}
+    // optional auto-stop (only if duration given)
+    if (duration) {
+      setTimeout(() => {
+        sound.pause();
+        sound.currentTime = 0;
+      }, duration);
+    }
 
-}
+  } catch (error) {
+    console.log(error);
+  }
+
+  }
 
 function stopAllSounds(){
 
@@ -331,10 +336,8 @@ if(competitionState.started)return;
 
 competitionState.started = true;
   
-  competitionState.timeLeft =
-calculateAllowedTime(
-competitionState.currentWord
-);
+  competitionState.timeLeft = 0;
+  
   updateTeacherTimer();
 
 competitionState.usedTime = 0;
@@ -376,7 +379,7 @@ if(
 competitionState.timeLeft === 5
 ){
 
-playSound(sounds.warning);
+playSound(sounds.warning,5000);
 
 }
 
@@ -614,7 +617,7 @@ competitionState.currentWord
 )/2
 ){
 
-playSound(sounds.applause);
+playSound(sounds.applause, 5000);
 
 }else{
 

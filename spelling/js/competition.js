@@ -256,7 +256,7 @@ student.full_name;
 
 // LOAD WORDS
 await loadParticipantWords(
-student.group_id
+student.group_number
 );
 
 // IMPORTANT:
@@ -458,16 +458,17 @@ await saveCompetitionState();
 // ==========================================
 // Load Words
 // ==========================================
-  async function loadParticipantWords(groupId){
+  async function loadParticipantWords(groupNumber){
 
 try{
 
 const res = await api({
-action:"getWordsByGroupId",
-group_id:groupId,
+action:"getWordsByGroup",
+group_number:groupNumber,
 competition_id: competitionState.competition.id,
 stage_number: competitionState.stage.stage_number
 });
+
 // SAFETY NORMALIZATION (VERY IMPORTANT)
 const rawWords = res?.words || [];
 

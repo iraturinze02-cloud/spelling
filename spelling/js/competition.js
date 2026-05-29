@@ -253,6 +253,7 @@ student.full_name;
 
 // FIND WORD GROUP
 loadParticipantWords(student.group_id);
+}
 
 // ==========================================
 // PREPARE WORD

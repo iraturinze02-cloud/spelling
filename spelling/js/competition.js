@@ -389,8 +389,10 @@ competitionState.timeLeft <= 0
 
 clearInterval(realtimeTimer);
 
-competitionState.timeLeft = 0;
-
+competitionState.timeLeft =
+calculateAllowedTime(
+competitionState.currentWord
+);
 competitionState.started = false;
 
 updateTeacherTimer();

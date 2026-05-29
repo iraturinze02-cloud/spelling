@@ -1594,25 +1594,25 @@ if (action === "finalizeVotes") {
     if (v.vote === "notspelt") notspelt++;
   }
 
-  let final_status = "wrong";
-
-  if (correct > wrong && correct > notspelt) {
-    final_status = "correct";
-  }
-  else if (notspelt > correct && notspelt > wrong) {
-    final_status = "notspelt";
-  }
-
   let score = 0;
 
-  if (final_status === "correct") {
+if (final_status === "correct") {
 
-    score =
-      used_time <= (time_allowed / 2)
-      ? 2
-      : 1;
-  }
+  const ratio = time_allowed / Math.max(used_time, 0.1);
 
+  let rawScore = Math.log(ratio + 1);
+
+  const MIN = 0.2;
+  const MAX = 5;
+
+  const normalized = rawScore / Math.log(11);
+
+  score = MIN + (MAX - MIN) * normalized;
+
+  score = Math.max(MIN, Math.min(MAX, score));
+
+  score = Math.round(score * 1000) / 1000;
+      }
   // SAVE RESULT
   await sql`
     INSERT INTO word_attempts(

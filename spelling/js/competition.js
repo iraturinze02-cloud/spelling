@@ -635,6 +635,7 @@ updateTeacherStatus(
 );
 
 await saveCompetitionState();
+  await nextWord();
 
 }
 catch(error){
@@ -656,7 +657,7 @@ competitionState.currentWordIndex++;
 const stage =
 competitionState.stage;
 
-// ROUND COMPLETE
+// PARTICIPANT FINISHED WORDS
 if(
 competitionState.currentWordIndex >=
 stage.words_per_round
@@ -670,7 +671,7 @@ playSound(
 sounds.roundFinish
 );
 
-// ALL PARTICIPANTS COMPLETE
+// ALL PARTICIPANTS FINISHED
 if(
 competitionState.currentStudentIndex >=
 competitionState.students.length
@@ -680,7 +681,7 @@ competitionState.currentStudentIndex = 0;
 
 competitionState.currentRound++;
 
-// COMPETITION COMPLETE
+// COMPETITION FINISHED
 if(
 competitionState.currentRound >
 stage.total_rounds
@@ -707,17 +708,23 @@ return;
 
 }
 
+// LOAD NEXT PARTICIPANT
+prepareCurrentParticipant();
+
+}
+else{
+
+// JUST NEXT WORD
+prepareCurrentWord();
+
 }
 
-// RESET
+// RESET TIMER
 competitionState.started = false;
 
 competitionState.usedTime = 0;
 
 competitionState.timeLeft = 0;
-
-// LOAD NEXT
-prepareCurrentParticipant();
 
 await saveCompetitionState();
 

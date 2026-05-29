@@ -1593,6 +1593,14 @@ if (action === "finalizeVotes") {
 
     if (v.vote === "notspelt") notspelt++;
   }
+let final_status = "wrong";
+
+if (correct > wrong && correct > notspelt) {
+  final_status = "correct";
+}
+else if (notspelt > correct && notspelt > wrong) {
+  final_status = "notspelt";
+}
 
   let score = 0;
 

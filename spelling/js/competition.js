@@ -244,6 +244,7 @@ document.getElementById(
 return;
 
 }
+  competitionState.currentWordIndex = 0;
 
 // DISPLAY STUDENT
 document.getElementById(
@@ -258,51 +259,44 @@ loadParticipantWords(student.group_id);
 // ==========================================
 // PREPARE WORD
 // ==========================================
-
 function prepareCurrentWord(){
 
-const stage =
-competitionState.stage;
+const stage = competitionState.stage;
+if(!stage) return;
 
-if(!stage)return;
+const words = competitionState.words || [];
 
-const index =
-(
-(
-competitionState.currentRound - 1
-)
-*
-stage.words_per_round
-)
-+
-competitionState.currentWordIndex;
+if(words.length === 0){
+  competitionState.currentWord = "NO WORDS";
+  document.getElementById("word").innerText = "NO WORDS";
+  return;
+}
 
-const word =
-competitionState.words[index];
+// SIMPLE PER-GROUP INDEXING (FIX)
+const index = competitionState.currentWordIndex;
 
-competitionState.currentWord =
-word || "FINISHED";
+const word = words[index];
+
+// fallback only if truly finished
+if(!word){
+  competitionState.currentWord = "FINISHED";
+  document.getElementById("word").innerText = "FINISHED";
+  return;
+}
+
+competitionState.currentWord = word;
 
 // DISPLAY WORD
-document.getElementById(
-"word"
-).innerText =
-competitionState.currentWord;
+document.getElementById("word").innerText = word;
 
 // ROUND INFO
-document.getElementById(
-"roundInfo"
-).innerText =
+document.getElementById("roundInfo").innerText =
 `${competitionState.currentRound}/${stage.total_rounds}`;
 
 // TIMER
-competitionState.timeLeft =
-calculateAllowedTime(
-competitionState.currentWord
-);
+competitionState.timeLeft = calculateAllowedTime(word);
 
 updateTeacherTimer();
-
 disableVotingButtons();
 
 }
@@ -446,27 +440,26 @@ await saveCompetitionState();
 // ==========================================
 // Load Words
 // ==========================================
-  
-async function loadParticipantWords(groupId){
+  async function loadParticipantWords(groupId){
 
 try{
 
 const res = await api({
-
 action:"getWordsByGroup",
-
 group_id:groupId,
-
-competition_id:
-competitionState.competition.id,
-
-stage_number:
-competitionState.stage.stage_number
-
+competition_id: competitionState.competition.id,
+stage_number: competitionState.stage.stage_number
 });
 
-competitionState.words =
-res.words.map(w => w.word);
+// SAFETY NORMALIZATION (VERY IMPORTANT)
+const rawWords = res?.words || [];
+
+competitionState.words = rawWords.map(w =>
+  typeof w === "string" ? w : w.word
+).filter(Boolean);
+
+// RESET INDEX FOR NEW STUDENT (CRITICAL FIX)
+competitionState.currentWordIndex = 0;
 
 prepareCurrentWord();
 
@@ -476,10 +469,13 @@ catch(error){
 console.log(error);
 
 competitionState.words = [];
+competitionState.currentWord = "NO WORDS";
+document.getElementById("word").innerText = "NO WORDS";
 
 }
 
 }
+
 // ==========================================
 // SUBMIT VOTE
 // ==========================================

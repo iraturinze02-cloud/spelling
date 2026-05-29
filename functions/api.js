@@ -17,8 +17,6 @@ export async function onRequest(context) {
   console.log("BODY:", body);
 console.log("ACTION:", action);
 
-
-
   try {
     
 

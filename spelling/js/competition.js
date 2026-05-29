@@ -253,7 +253,7 @@ document.getElementById(
 student.full_name;
 
 // FIND WORD GROUP
-loadParticipantWords(student.group_id);
+loadParticipantWords(student.group_number);
 }
 
 // ==========================================
@@ -440,13 +440,13 @@ await saveCompetitionState();
 // ==========================================
 // Load Words
 // ==========================================
-  async function loadParticipantWords(groupId){
+  async function loadParticipantWords(groupNumber){
 
 try{
 
 const res = await api({
 action:"getWordsByGroup",
-group_id:groupId,
+group_number:groupNumber,
 competition_id: competitionState.competition.id,
 stage_number: competitionState.stage.stage_number
 });

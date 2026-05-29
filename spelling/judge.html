@@ -654,22 +654,28 @@ document.getElementById("votingState")
 
 }else{
 
+if(!judgeVoteSubmitted){
 enableVoting();
+}
 
 document.getElementById("status")
 .innerText =
-"Voting Open";
+judgeVoteSubmitted
+? "Vote Already Submitted"
+: "Voting Open";
 
 document.getElementById("votingState")
 .innerText =
-"Enabled";
+judgeVoteSubmitted
+? "Submitted"
+: "Enabled";
 
 }
 
 }
 
 // ========================================
-// ENABLE VOTING
+// DISABLE VOTING
 // ========================================
 
 function disableVoting(){
@@ -680,18 +686,18 @@ document.getElementById("correctBtn")
 document.getElementById("wrongBtn")
 .disabled = true;
 
-// NOT SPELT ALWAYS ENABLED
 document.getElementById("notspeltBtn")
-.disabled = false;
+.disabled = true;
 
 }
 
 // ========================================
-// DISABLE VOTING
+// ENABLE VOTING
 // ========================================
 
 function enableVoting(){
 
+// already voted
 if(judgeVoteSubmitted)return;
 
 document.getElementById("correctBtn")
@@ -700,7 +706,6 @@ document.getElementById("correctBtn")
 document.getElementById("wrongBtn")
 .disabled = false;
 
-// NOT SPELT ALWAYS ENABLED
 document.getElementById("notspeltBtn")
 .disabled = false;
 

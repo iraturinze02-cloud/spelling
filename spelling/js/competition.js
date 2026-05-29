@@ -247,7 +247,6 @@ document.getElementById(
 return;
 
 }
-  competitionState.currentWordIndex = 0;
 
 // DISPLAY STUDENT
 document.getElementById(
@@ -255,8 +254,16 @@ document.getElementById(
 ).innerText =
 student.full_name;
 
-// FIND WORD GROUP
-await loadParticipantWords(student.group_number);
+// LOAD WORDS
+await loadParticipantWords(
+student.group_number
+);
+
+// IMPORTANT:
+// DO NOT RESET currentWordIndex HERE
+
+prepareCurrentWord();
+
 }
 
 // ==========================================

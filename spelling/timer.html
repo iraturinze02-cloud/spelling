@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Timer Display</title>
+
+<style>
+
+body{
+margin:0;
+background:black;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+#timer{
+font-size:300px;
+color:white;
+font-weight:bold;
+font-family:Arial;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="timer">0</div>
+
+<script>
+  async function api(data){
+
+const res = await fetch("/api",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify(data)
+});
+
+return await res.json();
+
+}
+
+let competition = null;
+
+async function init(){
+
+const comp = await api({
+action:"getActiveCompetition"
+});
+
+competition = comp.competition;
+
+// start syncing
+sync();
+setInterval(sync, 1000);
+
+}
+
+async function sync(){
+
+if(!competition) return;
+
+const res = await api({
+action:"getCompetitionRealtime",
+competition_id:competition.id
+});
+
+if(!res || !res.success) return;
+
+const state = res;
+
+// ONLY TIMER
+document.getElementById("timer").innerText =
+state.time_left ?? 0;
+
+}
+
+init();
+</script>
+
+</body>
+</html>

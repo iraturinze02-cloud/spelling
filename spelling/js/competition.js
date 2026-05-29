@@ -253,7 +253,7 @@ student.full_name;
 
 // FIND WORD GROUP
 const group = competitionState.wordGroups.find(
-  g => g.id == student.group_id
+  g => Number(g.id) === Number(student.group_id)
 );
 competitionState.words =
 group?.words || [];

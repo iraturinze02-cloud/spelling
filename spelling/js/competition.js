@@ -528,7 +528,7 @@ competitionState.usedTime
 });
 
 updateTeacherStatus(
-`Vote Submitted: ${vote}`
+`Judge voted ${vote.toUpperCase()}`
 );
 
 }

@@ -1682,48 +1682,52 @@ if (action === "getCompetitionRealtime") {
 
   const stage = stageRes[0];
 
-  // STUDENTS (FIXED: must include competition + stage draw relation)
+  // ===============================
+  // 1. GET STUDENTS (DRAW ORDER ONLY)
+  // ===============================
   const students = await sql`
     SELECT
-      s.*,
+      s.id,
+      s.full_name,
       d.draw_order,
-      d.group_id,
-      g.group_number
+      d.group_id
     FROM students s
     JOIN student_draws d
       ON s.id = d.student_id
       AND d.competition_id = ${body.competition_id}
       AND d.stage_number = ${stage.stage_number}
-    LEFT JOIN word_groups g
-      ON g.id = d.group_id
     ORDER BY d.draw_order ASC
   `;
 
   const student = students[state.current_student_index];
 
+  // ===============================
+  // 2. SAFE WORD LOADING (PER STUDENT GROUP)
+  // ===============================
   let words = [];
 
-  if (student) {
+  if (student?.group_id) {
 
-    // ✅ FIXED: use group_id (NOT group_number)
-    const group = await sql`
+    const wordsRes = await sql`
       SELECT w.word
       FROM words w
-      JOIN word_groups g
-        ON g.id = w.group_id
-      WHERE g.id = ${student.group_id}
+      WHERE w.group_id = ${student.group_id}
       ORDER BY w.id ASC
     `;
 
-    words = group.map(w => w.word);
+    words = wordsRes.map(w => w.word);
   }
 
-  const wordIndex =
-    ((state.current_round - 1) * stage.words_per_round) +
-    state.current_word_index;
+  // ===============================
+  // 3. GLOBAL SYNC INDEX (SAFE)
+  // ===============================
+  const wordIndex = state.current_word_index || 0;
 
   const currentWord = words[wordIndex] || "FINISHED";
 
+  // ===============================
+  // 4. VOTES
+  // ===============================
   const votes = await sql`
     SELECT COUNT(*)::int AS total
     FROM judge_votes
@@ -1741,12 +1745,12 @@ if (action === "getCompetitionRealtime") {
     current_round: state.current_round,
     word: currentWord,
     current_word: currentWord,
-    word_index: state.current_word_index,
+    word_index: wordIndex,
     time_left: state.time_left,
     started: state.started,
     vote_count: votes[0]?.total || 0
   });
-  }
+}
     // =====================================================
     // GET STUDENTS IN A COMPETITION 
     // =====================================================

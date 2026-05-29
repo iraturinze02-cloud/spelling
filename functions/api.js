@@ -1846,14 +1846,13 @@ FROM words w
 JOIN word_groups g
 ON g.id = w.group_id
 
-WHERE g.id = ${body.group_id}
+WHERE g.group_number = ${body.group_number}
 
 AND g.competition_id = ${body.competition_id}
 
 AND g.stage_number = ${body.stage_number}
 
 ORDER BY w.id ASC
-
 `;
 
 return Response.json({

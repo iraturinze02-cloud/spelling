@@ -1786,7 +1786,10 @@ vote_count:votes[0]?.total || 0
 });
 
   }
-    if (action === "getLiveStudents") {
+    // =====================================================
+    // GET STUDENTS IN A COMPETITION 
+    // =====================================================
+if (action === "getLiveStudents") {
 
   const students = await sql`
 
@@ -1794,9 +1797,13 @@ vote_count:votes[0]?.total || 0
       s.id,
       s.full_name,
       s.gender,
+
       sp.stage_number,
+
       d.group_id,
-      d.draw_order
+      d.draw_order,
+
+      g.group_number
 
     FROM student_stage_progress sp
 
@@ -1808,13 +1815,15 @@ vote_count:votes[0]?.total || 0
       AND d.competition_id = sp.competition_id
       AND d.stage_number = sp.stage_number
 
+    LEFT JOIN word_groups g
+      ON g.id = d.group_id
+
     WHERE sp.competition_id = ${body.competition_id}
       AND sp.stage_number = ${body.stage_number}
       AND sp.status = 'active'
 
     ORDER BY
-      d.draw_order ASC,
-      s.id ASC
+      d.draw_order ASC
 
   `;
 
@@ -1823,7 +1832,6 @@ vote_count:votes[0]?.total || 0
     students
   });
 }
-
     // =====================================================
     // DEFAULT
     // =====================================================

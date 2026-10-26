@@ -81,6 +81,270 @@ console.log("ACTION:", action);
 
       return Response.json({ success: true });
     }
+
+
+    
+    // =====================================================
+    // SAVE COMPETITION JUDGES
+    // Table: competition_judges
+    // =====================================================
+    if (action === "saveCompetitionJudges") {
+      const competitionId = Number(body.competition_id);
+      const selectedJudges = body.judges;
+
+      if (!Number.isInteger(competitionId) || competitionId <= 0) {
+        return Response.json({
+          success: false,
+          error: "A valid competition_id is required."
+        }, { status: 400 });
+      }
+
+      if (!Array.isArray(selectedJudges)) {
+        return Response.json({
+          success: false,
+          error: "judges must be an array of judge IDs."
+        }, { status: 400 });
+      }
+
+      const judgeIds = [...new Set(
+        selectedJudges.map(Number)
+      )];
+
+      if (judgeIds.some(
+        id => !Number.isInteger(id) || id <= 0
+      )) {
+        return Response.json({
+          success: false,
+          error: "One or more judge IDs are invalid."
+        }, { status: 400 });
+      }
+
+      // Confirm that the competition exists.
+      const competition = await sql`
+        SELECT id
+        FROM competitions
+        WHERE id = ${competitionId}
+        LIMIT 1
+      `;
+
+      if (competition.length === 0) {
+        return Response.json({
+          success: false,
+          error: "Competition not found."
+        }, { status: 404 });
+      }
+
+      // Confirm that all selected users exist and are judges
+      // or teachers, matching the existing getJudges action.
+      if (judgeIds.length > 0) {
+        const validJudges = await sql`
+          SELECT id
+          FROM users
+          WHERE id = ANY(${judgeIds})
+            AND role IN ('judge', 'teacher')
+        `;
+
+        if (validJudges.length !== judgeIds.length) {
+          return Response.json({
+            success: false,
+            error: "One or more selected users are not valid judges."
+          }, { status: 400 });
+        }
+      }
+
+      // Replace the selected judges for this competition.
+      // An empty array clears the current assignments.
+      await sql`
+        DELETE FROM competition_judges
+        WHERE competition_id = ${competitionId}
+      `;
+
+      for (const judgeId of judgeIds) {
+        await sql`
+          INSERT INTO competition_judges
+            (competition_id, judge_id)
+          VALUES
+            (${competitionId}, ${judgeId})
+        `;
+      }
+
+      return Response.json({
+        success: true,
+        message: "Competition judges saved.",
+        saved_count: judgeIds.length
+      });
+    }
+
+
+    // =====================================================
+    // SAVE COMPETITION STAGES
+    // Table: competition_stages
+    // =====================================================
+    if (action === "saveStages") {
+      const competitionId = Number(
+        body.stages?.[0]?.competition_id
+      );
+
+      const stageData = body.stages;
+
+      if (!Number.isInteger(competitionId) || competitionId <= 0) {
+        return Response.json({
+          success: false,
+          error: "A valid competition_id is required."
+        }, { status: 400 });
+      }
+
+      if (!Array.isArray(stageData) || stageData.length === 0) {
+        return Response.json({
+          success: false,
+          error: "Provide at least one stage."
+        }, { status: 400 });
+      }
+
+      // Validate the competition.
+      const competition = await sql`
+        SELECT id
+        FROM competitions
+        WHERE id = ${competitionId}
+        LIMIT 1
+      `;
+
+      if (competition.length === 0) {
+        return Response.json({
+          success: false,
+          error: "Competition not found."
+        }, { status: 404 });
+      }
+
+      // Validate every stage before changing the database.
+      const stageNumbers = new Set();
+
+      for (const stage of stageData) {
+        const stageCompetitionId = Number(stage.competition_id);
+        const stageNumber = Number(stage.stage_number);
+        const participantCount = Number(stage.participant_count);
+        const qualifierCount = Number(stage.qualifier_count);
+
+        if (
+          stageCompetitionId !== competitionId ||
+          !Number.isInteger(stageNumber) ||
+          stageNumber < 1 ||
+          stageNumbers.has(stageNumber) ||
+          !Number.isInteger(participantCount) ||
+          participantCount < 1 ||
+          !Number.isInteger(qualifierCount) ||
+          qualifierCount < 0 ||
+          qualifierCount > participantCount
+        ) {
+          return Response.json({
+            success: false,
+            error:
+              "Invalid stage data. Check stage numbers, participants, and qualifiers."
+          }, { status: 400 });
+        }
+
+        if (
+          !["top", "low", "random"].includes(
+            String(stage.qualification_rule)
+          )
+        ) {
+          return Response.json({
+            success: false,
+            error:
+              "qualification_rule must be top, low, or random."
+          }, { status: 400 });
+        }
+
+        stageNumbers.add(stageNumber);
+      }
+
+      // Save each stage. Update existing stages instead of
+      // inserting duplicates; insert new stages when necessary.
+      for (const stage of stageData) {
+        const stageNumber = Number(stage.stage_number);
+        const participantCount = Number(stage.participant_count);
+        const qualifierCount = Number(stage.qualifier_count);
+        const stageName =
+          String(stage.stage_name || `Stage ${stageNumber}`).trim();
+
+        const qualificationRule =
+          String(stage.qualification_rule);
+
+        const status =
+          String(stage.status) === "active" ? "active" : "inactive";
+
+        // Keep existing round settings, or use defaults for new stages.
+        const existing = await sql`
+          SELECT id, total_rounds, words_per_round
+          FROM competition_stages
+          WHERE competition_id = ${competitionId}
+            AND stage_number = ${stageNumber}
+          LIMIT 1
+        `;
+
+        if (existing.length > 0) {
+          const current = existing[0];
+          const rounds = Number(current.total_rounds) || 3;
+          const wordsPerRound = Number(current.words_per_round) || 3;
+
+          await sql`
+            UPDATE competition_stages
+            SET
+              stage_name = ${stageName},
+              participant_count = ${participantCount},
+              qualification_rule = ${qualificationRule},
+              qualifier_count = ${qualifierCount},
+              top_qualifiers = ${qualifierCount},
+              total_rounds = ${rounds},
+              words_per_round = ${wordsPerRound},
+              total_words = ${rounds * wordsPerRound},
+              status = ${status}
+            WHERE id = ${current.id}
+          `;
+        } else {
+          const rounds = 3;
+          const wordsPerRound = 3;
+
+          await sql`
+            INSERT INTO competition_stages (
+              competition_id,
+              stage_number,
+              stage_name,
+              participant_count,
+              qualification_rule,
+              qualifier_count,
+              top_qualifiers,
+              judge_count,
+              total_rounds,
+              words_per_round,
+              total_words,
+              status
+            )
+            VALUES (
+              ${competitionId},
+              ${stageNumber},
+              ${stageName},
+              ${participantCount},
+              ${qualificationRule},
+              ${qualifierCount},
+              ${qualifierCount},
+              0,
+              ${rounds},
+              ${wordsPerRound},
+              ${rounds * wordsPerRound},
+              ${status}
+            )
+          `;
+        }
+      }
+
+      return Response.json({
+        success: true,
+        message: "Competition stages saved.",
+        saved_count: stageData.length
+      });
+    }
+
 // =====================================================
 // ACTIVATE STAGE (FIXED)
 // =====================================================

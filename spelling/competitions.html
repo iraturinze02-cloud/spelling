@@ -1,544 +1,550 @@
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
 <meta charset="UTF-8">
-
-<meta name="viewport"
-content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <title>Competitions</title>
 
 <style>
-
-*{
-box-sizing:border-box;
-font-family:Arial,sans-serif;
+* {
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
 }
 
-body{
-margin:0;
-background:#f3f4f6;
+body {
+    margin: 0;
+    background: #f3f4f6;
 }
 
-/* HEADER */
-
-.header{
-
-background:#2563eb;
-color:white;
-
-padding:20px;
-
-display:flex;
-
-justify-content:space-between;
-
-align-items:center;
-
+.header {
+    background: #2563eb;
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
 }
 
-.header h1{
-margin:0;
+.header h1 {
+    margin: 0;
 }
 
-.back{
-
-background:white;
-color:#2563eb;
-
-border:none;
-
-padding:10px 16px;
-
-border-radius:8px;
-
-font-weight:bold;
-
-cursor:pointer;
-
+.back {
+    background: white;
+    color: #2563eb;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
 }
 
-/* CONTAINER */
-
-.container{
-
-max-width:1200px;
-
-margin:auto;
-
-padding:25px;
-
+.container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 25px;
 }
 
-/* FORM */
-
-.form{
-
-background:white;
-
-padding:25px;
-
-border-radius:15px;
-
-margin-bottom:25px;
-
-box-shadow:
-0 2px 10px rgba(0,0,0,.08);
-
+.form {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.08);
 }
 
-.form h2{
-
-margin-top:0;
-
+.form h2 {
+    margin-top: 0;
 }
 
-input{
-
-width:100%;
-
-padding:14px;
-
-margin-top:10px;
-
-border:1px solid #d1d5db;
-
-border-radius:10px;
-
-font-size:16px;
-
+input {
+    width: 100%;
+    padding: 14px;
+    margin-top: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    font-size: 16px;
 }
 
-.create{
-
-margin-top:15px;
-
-background:#16a34a;
-
-color:white;
-
-border:none;
-
-padding:14px 20px;
-
-border-radius:10px;
-
-font-size:16px;
-
-font-weight:bold;
-
-cursor:pointer;
-
+button:disabled {
+    opacity: .6;
+    cursor: not-allowed;
 }
 
-/* TABLE */
-
-.table-box{
-
-background:white;
-
-padding:20px;
-
-border-radius:15px;
-
-box-shadow:
-0 2px 10px rgba(0,0,0,.08);
-
-overflow:auto;
-
+.create {
+    margin-top: 15px;
+    background: #16a34a;
+    color: white;
+    border: none;
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
 }
 
-table{
-
-width:100%;
-
-border-collapse:collapse;
-
+.table-box {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.08);
+    overflow-x: auto;
 }
 
-th{
-
-background:#eff6ff;
-
-padding:15px;
-
-text-align:left;
-
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 650px;
 }
 
-td{
-
-padding:15px;
-
-border-top:1px solid #e5e7eb;
-
+th {
+    background: #eff6ff;
+    padding: 15px;
+    text-align: left;
 }
 
-/* STATUS */
-
-.active{
-
-background:#dcfce7;
-color:#166534;
-
-padding:6px 12px;
-
-border-radius:30px;
-
-font-size:14px;
-
-font-weight:bold;
-
-display:inline-block;
-
+td {
+    padding: 15px;
+    border-top: 1px solid #e5e7eb;
 }
 
-.inactive{
-
-background:#fee2e2;
-color:#991b1b;
-
-padding:6px 12px;
-
-border-radius:30px;
-
-font-size:14px;
-
-font-weight:bold;
-
-display:inline-block;
-
+.active {
+    background: #dcfce7;
+    color: #166534;
+    padding: 6px 12px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: bold;
+    display: inline-block;
 }
 
-/* ACTION BUTTONS */
-
-.action{
-
-border:none;
-
-padding:10px 14px;
-
-border-radius:8px;
-
-cursor:pointer;
-
-color:white;
-
-font-weight:bold;
-
-margin-right:5px;
-
+.inactive {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 6px 12px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: bold;
+    display: inline-block;
 }
 
-.open{
-background:#2563eb;
+.action {
+    border: none;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: white;
+    font-weight: bold;
+    margin: 3px;
 }
 
-.activate{
-background:#16a34a;
+.open {
+    background: #2563eb;
 }
 
-.delete{
-background:#dc2626;
+.activate {
+    background: #16a34a;
 }
 
+.delete {
+    background: #dc2626;
+}
+
+#message {
+    margin: 0 0 15px;
+    color: #374151;
+}
+
+@media (max-width: 600px) {
+    .header {
+        padding: 15px;
+    }
+
+    .header h1 {
+        font-size: 22px;
+    }
+
+    .container {
+        padding: 15px;
+    }
+
+    .form,
+    .table-box {
+        padding: 15px;
+    }
+}
 </style>
-
 </head>
 
 <body>
 
 <div class="header">
+    <h1>Competitions</h1>
 
-<h1>
-
-Competitions
-
-</h1>
-
-<button
-class="back"
-onclick="window.location='teacher-home.html'">
-
-Back
-
-</button>
-
+    <button class="back"
+        onclick="window.location.href='teacher-home.html'">
+        Back
+    </button>
 </div>
-
 
 <div class="container">
 
-<!-- CREATE -->
+    <div class="form">
+        <h2>Create Competition</h2>
 
-<div class="form">
+        <input
+            type="text"
+            id="competitionName"
+            placeholder="Competition Name"
+            maxlength="200"
+            autocomplete="off">
 
-<h2>
+        <button class="create" id="createButton"
+            onclick="createCompetition()">
+            Create Competition
+        </button>
+    </div>
 
-Create Competition
+    <p id="message" role="status" aria-live="polite"></p>
 
-</h2>
+    <div class="table-box">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Competition</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
 
-<input
-type="text"
-id="competitionName"
-placeholder="Competition Name">
-
-<button
-class="create"
-onclick="createCompetition()">
-
-Create Competition
-
-</button>
-
-</div>
-
-
-<!-- LIST -->
-
-<div class="table-box">
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>ID</th>
-
-<th>Competition</th>
-
-<th>Status</th>
-
-<th>Created</th>
-
-<th>Actions</th>
-
-</tr>
-
-</thead>
-
-<tbody id="competitionTable">
-
-</tbody>
-
-</table>
+            <tbody id="competitionTable">
+                <tr>
+                    <td colspan="5">Loading competitions...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 
 </div>
-
-</div>
-
 
 <script>
+/* =====================================================
+   GLOBAL API HELPER
+   Cloudflare Pages Functions endpoint: /api
+===================================================== */
 
+async function api(data) {
+    try {
+        const response = await fetch("/api", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)
+        });
 
-async function loadCompetitions(){
+        const text = await response.text();
 
-const res =
-await fetch(
-"/api/getCompetitions"
-);
+        let result;
 
-const data =
-await res.json();
+        try {
+            result = JSON.parse(text);
+        } catch {
+            console.error("API returned non-JSON:", text);
+            throw new Error(
+                "The server returned an invalid response. Check your Cloudflare Pages API route."
+            );
+        }
 
-console.log("DEBUG competitions:", data);
+        if (!response.ok) {
+            console.error("API ERROR:", result);
 
-const competitions = data.competitions || [];
+            throw new Error(
+                result.error ||
+                result.message ||
+                `Request failed with status ${response.status}`
+            );
+        }
 
-let html = "";
+        return result;
 
-competitions.forEach(comp=>{
-
-html += `
-<tr>
-
-<td>
-${comp.id}
-</td>
-
-<td>
-${comp.competition_name}
-</td>
-
-<td>
-<span class="${comp.status==="active" ? "active" : "inactive"}">
-${comp.status}
-</span>
-</td>
-
-<td>
-${comp.created_at ? new Date(comp.created_at).toLocaleDateString() : "-"}
-</td>
-
-<td>
-
-<button class="action open" onclick="openCompetition(${comp.id})">
-Open
-</button>
-
-<button class="action activate" onclick="activateCompetition(${comp.id})">
-Activate
-</button>
-
-<button class="action delete" onclick="deleteCompetition(${comp.id})">
-Delete
-</button>
-
-</td>
-
-</tr>
-`;
-});
-
-document.getElementById(
-"competitionTable"
-).innerHTML = html;
-
-  }
-
-
-async function createCompetition(){
-
-let name =
-document.getElementById(
-"competitionName"
-).value.trim();
-
-if(!name){
-
-alert(
-"Enter competition name"
-);
-
-return;
-
+    } catch (error) {
+        console.error("API REQUEST FAILED:", error);
+        throw error;
+    }
 }
 
-await fetch(
 
-"/.netlify/functions/addCompetition",
+/* =====================================================
+   MESSAGE
+===================================================== */
 
-{
-
-method:"POST",
-
-headers:{
-"Content-Type":
-"application/json"
-},
-
-body:JSON.stringify({
-
-competition_name:name
-
-})
-
+function showMessage(message) {
+    document.getElementById("message").textContent = message;
 }
 
-);
 
-document.getElementById(
-"competitionName"
-).value="";
+/* =====================================================
+   LOAD COMPETITIONS
+===================================================== */
+
+async function loadCompetitions() {
+    const table = document.getElementById("competitionTable");
+
+    table.innerHTML = `
+        <tr>
+            <td colspan="5">Loading competitions...</td>
+        </tr>
+    `;
+
+    try {
+        const data = await api({
+            action: "getCompetitions"
+        });
+
+        const competitions = data.competitions || [];
+
+        console.log("Competitions received:", competitions);
+
+        if (!Array.isArray(competitions)) {
+            throw new Error("Invalid competitions data returned by the server.");
+        }
+
+        if (competitions.length === 0) {
+            table.innerHTML = `
+                <tr>
+                    <td colspan="5">No competitions found.</td>
+                </tr>
+            `;
+            return;
+        }
+
+        table.innerHTML = "";
+
+        competitions.forEach(comp => {
+            const row = document.createElement("tr");
+
+            const idCell = document.createElement("td");
+            idCell.textContent = comp.id ?? "-";
+
+            const nameCell = document.createElement("td");
+            nameCell.textContent = comp.competition_name ?? "-";
+
+            const statusCell = document.createElement("td");
+            const status = document.createElement("span");
+
+            status.textContent = comp.status ?? "inactive";
+            status.className =
+                comp.status === "active" ? "active" : "inactive";
+
+            statusCell.appendChild(status);
+
+            const createdCell = document.createElement("td");
+
+            if (comp.created_at) {
+                const date = new Date(comp.created_at);
+
+                createdCell.textContent = Number.isNaN(date.getTime())
+                    ? "-"
+                    : date.toLocaleDateString();
+            } else {
+                createdCell.textContent = "-";
+            }
+
+            const actionsCell = document.createElement("td");
+
+            const openButton = document.createElement("button");
+            openButton.className = "action open";
+            openButton.textContent = "Open";
+            openButton.addEventListener("click", () => {
+                openCompetition(comp.id);
+            });
+
+            const activateButton = document.createElement("button");
+            activateButton.className = "action activate";
+            activateButton.textContent = "Activate";
+            activateButton.addEventListener("click", () => {
+                activateCompetition(comp.id);
+            });
+
+            const deleteButton = document.createElement("button");
+            deleteButton.className = "action delete";
+            deleteButton.textContent = "Delete";
+            deleteButton.addEventListener("click", () => {
+                deleteCompetition(comp.id);
+            });
+
+            actionsCell.append(
+                openButton,
+                activateButton,
+                deleteButton
+            );
+
+            row.append(
+                idCell,
+                nameCell,
+                statusCell,
+                createdCell,
+                actionsCell
+            );
+
+            table.appendChild(row);
+        });
+
+    } catch (error) {
+        console.error("LOAD COMPETITIONS ERROR:", error);
+
+        table.innerHTML = `
+            <tr>
+                <td colspan="5">
+                    Could not load competitions. Check the browser console.
+                </td>
+            </tr>
+        `;
+
+        showMessage(error.message);
+    }
+}
+
+
+/* =====================================================
+   CREATE COMPETITION
+===================================================== */
+
+async function createCompetition() {
+    const input = document.getElementById("competitionName");
+    const button = document.getElementById("createButton");
+
+    const name = input.value.trim();
+
+    if (!name) {
+        alert("Enter competition name.");
+        input.focus();
+        return;
+    }
+
+    button.disabled = true;
+    showMessage("Creating competition...");
+
+    try {
+        const result = await api({
+            action: "createCompetition",
+            competition_name: name
+        });
+
+        if (result.success !== true) {
+            throw new Error(
+                result.error || "Could not create competition."
+            );
+        }
+
+        input.value = "";
+        showMessage("Competition created successfully.");
+
+        await loadCompetitions();
+
+    } catch (error) {
+        console.error("CREATE COMPETITION ERROR:", error);
+        showMessage(error.message);
+        alert(error.message);
+
+    } finally {
+        button.disabled = false;
+    }
+}
+
+
+/* =====================================================
+   ACTIVATE COMPETITION
+===================================================== */
+
+async function activateCompetition(id) {
+    if (!confirm("Activate this competition?")) {
+        return;
+    }
+
+    showMessage("Activating competition...");
+
+    try {
+        const result = await api({
+            action: "activateCompetition",
+            competition_id: id
+        });
+
+        if (result.success !== true) {
+            throw new Error(
+                result.error || "Could not activate competition."
+            );
+        }
+
+        showMessage("Competition activated successfully.");
+
+        await loadCompetitions();
+
+    } catch (error) {
+        console.error("ACTIVATE COMPETITION ERROR:", error);
+        showMessage(error.message);
+        alert(error.message);
+    }
+}
+
+
+/* =====================================================
+   DELETE COMPETITION
+===================================================== */
+
+async function deleteCompetition(id) {
+    if (!confirm("Are you sure you want to delete this competition?")) {
+        return;
+    }
+
+    showMessage("Deleting competition...");
+
+    try {
+        const result = await api({
+            action: "deleteCompetition",
+            id: id
+        });
+
+        if (result.success !== true) {
+            throw new Error(
+                result.error || "Could not delete competition."
+            );
+        }
+
+        showMessage("Competition deleted successfully.");
+
+        await loadCompetitions();
+
+    } catch (error) {
+        console.error("DELETE COMPETITION ERROR:", error);
+        showMessage(error.message);
+        alert(error.message);
+    }
+}
+
+
+/* =====================================================
+   OPEN COMPETITION
+===================================================== */
+
+function openCompetition(id) {
+    localStorage.setItem("competitionId", id);
+    window.location.href = "competition-stages.html";
+}
+
+
+/* =====================================================
+   INITIAL LOAD
+===================================================== */
 
 loadCompetitions();
-
-}
-
-
-
-async function activateCompetition(id){
-
-await fetch(
-
-"/.netlify/functions/activateCompetition",
-
-{
-
-method:"POST",
-
-headers:{
-"Content-Type":
-"application/json"
-},
-
-body:JSON.stringify({
-
-competition_id: id
-
-})
-
-}
-
-);
-
-loadCompetitions();
-
-}
-
-
-
-async function deleteCompetition(id){
-
-if(!confirm(
-"Delete competition?"
-)){
-
-return;
-
-}
-
-await fetch(
-
-"/.netlify/functions/deleteCompetition",
-
-{
-
-method:"POST",
-
-headers:{
-"Content-Type":
-"application/json"
-},
-
-body:JSON.stringify({
-
-id
-
-})
-
-}
-
-);
-
-loadCompetitions();
-
-}
-
-
-
-function openCompetition(id){
-
-localStorage.setItem(
-"competitionId",
-id
-);
-
-window.location=
-"competition-stages.html";
-
-}
-
-
-
-loadCompetitions();
-
 </script>
 
 </body>
-
-  </html>
+</html>

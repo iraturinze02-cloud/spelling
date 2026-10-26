@@ -1,3 +1,4 @@
+
 let editing = false;
 let competition = null;
 let stages = [];
@@ -13,34 +14,64 @@ window.onload = async () => {
 };
 
 /* ===============================
+API HELPER
+=============================== */
+
+async function apiRequest(payload) {
+  const res = await fetch("/api", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  let data;
+
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error(`Server returned an invalid response (${res.status}).`);
+  }
+
+  if (!res.ok || data.success === false) {
+    throw new Error(
+      data.error || `Request failed (${res.status}).`
+    );
+  }
+
+  return data;
+}
+
+/* ===============================
 LOAD ACTIVE COMPETITION
 =============================== */
 
 async function loadCompetition() {
   try {
-    const res = await fetch("/api", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "getActiveCompetition"
-      })
+    const data = await apiRequest({
+      action: "getActiveCompetition"
     });
-
-    const data = await res.json();
 
     competition = data.competition || null;
 
     if (competition) {
-      localStorage.setItem("competition_id", competition.id);
+      localStorage.setItem(
+        "competition_id",
+        String(competition.id)
+      );
     } else {
       localStorage.removeItem("competition_id");
     }
 
     document.getElementById("competitionName").innerText =
-      competition ? competition.competition_name : "No Active Competition";
+      competition
+        ? competition.competition_name
+        : "No Active Competition";
 
   } catch (error) {
-    console.log("Competition error:", error);
+    console.error("Competition error:", error);
+    alert("Could not load the active competition: " + error.message);
   }
 }
 
@@ -49,26 +80,34 @@ LOAD STAGES
 =============================== */
 
 async function loadStages() {
+  stages = [];
+
   try {
+    if (!competition) {
+      return;
+    }
 
-    if (!competition) return;
-
-    const res = await fetch("/api", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "getStagesByCompetition",
-        competition_id: competition.id
-      })
+    const data = await apiRequest({
+      action: "getStagesByCompetition",
+      competition_id: Number(competition.id)
     });
-
-    const data = await res.json();
 
     stages = data.stages || [];
 
   } catch (error) {
-    console.log(error);
+    console.error("Stages error:", error);
+    alert("Could not load competition stages: " + error.message);
   }
+}
+
+/* ===============================
+GET ACTIVE STAGE
+=============================== */
+
+function getActiveStage() {
+  return stages.find(
+    stage => String(stage.status).toLowerCase() === "active"
+  ) || stages[0] || null;
 }
 
 /* ===============================
@@ -76,66 +115,107 @@ LOAD STUDENTS
 =============================== */
 
 async function loadStudents() {
+  const list = document.getElementById("list");
+
   try {
+    const competitionId = Number(
+      localStorage.getItem("competition_id")
+    );
 
-  const competition_id = localStorage.getItem("competition_id");
+    const activeStage = getActiveStage();
 
-const activeStage = stages.find(s => s.status === "active") || stages[0];
+    if (!competitionId || !activeStage) {
+      if (list) {
+        list.innerHTML = `
+          <tr>
+            <td colspan="4">
+              No active competition or stage selected.
+            </td>
+          </tr>
+        `;
+      }
+      return;
+    }
 
-if (!competition_id || !activeStage) {
-  alert("No active competition or stage selected");
-  return;
-}
-
-const stage_number = activeStage.stage_number;
-
-    const res = await fetch("/api", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "getStudents",
-        competition_id,
-        stage_number
-      })
+    const data = await apiRequest({
+      action: "getStudents",
+      competition_id: competitionId,
+      stage_number: Number(activeStage.stage_number)
     });
 
-    const data = await res.json();
+    const students = data.students || [];
 
-    let html = "";
-
-    (data.students || []).forEach(s => {
-
-      html += `
+    if (students.length === 0) {
+      list.innerHTML = `
         <tr>
-          <td>${s.full_name}</td>
-          <td>${s.gender}</td>
-          <td>${s.class_name}</td>
-          <td>
-
-            <button class="edit"
-              onclick="editStudent(
-                ${s.id},
-                '${s.full_name}',
-                '${s.gender}',
-                '${s.class_name}'
-              )">
-              Edit
-            </button>
-
-            <button class="delete"
-              onclick="deleteStudent(${s.id})">
-              Delete
-            </button>
-
-          </td>
+          <td colspan="4">No students found.</td>
         </tr>
       `;
+      return;
+    }
+
+    list.innerHTML = "";
+
+    students.forEach(student => {
+      const tr = document.createElement("tr");
+
+      const nameCell = document.createElement("td");
+      nameCell.textContent = student.full_name || "";
+
+      const genderCell = document.createElement("td");
+      genderCell.textContent = student.gender || "";
+
+      const classCell = document.createElement("td");
+      classCell.textContent = student.class_name || "";
+
+      const actionsCell = document.createElement("td");
+
+      const editButton = document.createElement("button");
+      editButton.type = "button";
+      editButton.className = "edit";
+      editButton.textContent = "Edit";
+
+      editButton.addEventListener("click", () => {
+        editStudent(
+          student.id,
+          student.full_name,
+          student.gender,
+          student.class_name
+        );
+      });
+
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.className = "delete";
+      deleteButton.textContent = "Delete";
+
+      deleteButton.addEventListener("click", () => {
+        deleteStudent(student.id);
+      });
+
+      actionsCell.append(editButton, deleteButton);
+      tr.append(
+        nameCell,
+        genderCell,
+        classCell,
+        actionsCell
+      );
+
+      list.appendChild(tr);
     });
 
-    document.getElementById("list").innerHTML = html;
-
   } catch (error) {
-    console.log(error);
+    console.error("Students error:", error);
+
+    if (list) {
+      list.innerHTML = `
+        <tr>
+          <td colspan="4">Could not load students.</td>
+        </tr>
+      `;
+    }
+
+    alert("Could not load students: " + error.message);
   }
 }
 
@@ -146,6 +226,11 @@ MODAL FUNCTIONS
 function openModal() {
   editing = false;
 
+  document.getElementById("id").value = "";
+  document.getElementById("name").value = "";
+  document.getElementById("gender").value = "";
+  document.getElementById("class").value = "";
+
   document.getElementById("title").innerText = "Add Student";
   document.getElementById("modal").style.display = "block";
 }
@@ -154,13 +239,17 @@ function closeModal() {
   document.getElementById("modal").style.display = "none";
 }
 
+/* ===============================
+EDIT STUDENT
+=============================== */
+
 function editStudent(id, name, gender, cls) {
   editing = true;
 
   document.getElementById("id").value = id;
-  document.getElementById("name").value = name;
-  document.getElementById("gender").value = gender;
-  document.getElementById("class").value = cls;
+  document.getElementById("name").value = name || "";
+  document.getElementById("gender").value = gender || "";
+  document.getElementById("class").value = cls || "";
 
   document.getElementById("title").innerText = "Edit Student";
   document.getElementById("modal").style.display = "block";
@@ -171,31 +260,66 @@ SAVE STUDENT (ADD / UPDATE)
 =============================== */
 
 async function saveStudent() {
-  const activeStage = stages.find(s => s.status === "active");
+  try {
+    const competitionId = Number(
+      localStorage.getItem("competition_id")
+    );
 
+    const activeStage = getActiveStage();
 
-  let data = {
-    id: document.getElementById("id").value,
-    full_name: document.getElementById("name").value,
-    gender: document.getElementById("gender").value,
-    class_name: document.getElementById("class").value,
-    competition_id: localStorage.getItem("competition_id"),
-    stage_number: activeStage ? activeStage.stage_number : null
-};
+    const fullName = document
+      .getElementById("name")
+      .value.trim();
 
-  let action = editing ? "updateStudent" : "addStudent";
+    const gender = document
+      .getElementById("gender")
+      .value;
 
-  await fetch("/api", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action,
-      ...data
-    })
-  });
+    const className = document
+      .getElementById("class")
+      .value.trim();
 
-  closeModal();
-  loadStudents();
+    if (!competitionId) {
+      alert("There is no active competition.");
+      return;
+    }
+
+    if (!activeStage) {
+      alert("There is no stage selected.");
+      return;
+    }
+
+    if (!fullName || !gender || !className) {
+      alert("Please fill in the student's name, gender, and class.");
+      return;
+    }
+
+    const payload = {
+      action: editing ? "updateStudent" : "addStudent",
+      full_name: fullName,
+      gender,
+      class_name: className,
+      competition_id: competitionId,
+      stage_number: Number(activeStage.stage_number)
+    };
+
+    if (editing) {
+      payload.id = Number(
+        document.getElementById("id").value
+      );
+    }
+
+    const data = await apiRequest(payload);
+
+    alert(data.message || "Student saved successfully.");
+
+    closeModal();
+    await loadStudents();
+
+  } catch (error) {
+    console.error("Save student error:", error);
+    alert("Could not save student: " + error.message);
+  }
 }
 
 /* ===============================
@@ -203,21 +327,22 @@ DELETE STUDENT
 =============================== */
 
 async function deleteStudent(id) {
+  if (!confirm("Are you sure you want to delete this student?")) {
+    return;
+  }
 
-  await fetch("/api", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+  try {
+    const data = await apiRequest({
       action: "deleteStudent",
-      id
-    })
-  });
+      id: Number(id)
+    });
 
-  loadStudents();
+    alert(data.message || "Student deleted successfully.");
+
+    await loadStudents();
+
+  } catch (error) {
+    console.error("Delete student error:", error);
+    alert("Could not delete student: " + error.message);
+  }
 }
-
-/* ===============================
-AUTO START
-=============================== */
-
-loadStudents();

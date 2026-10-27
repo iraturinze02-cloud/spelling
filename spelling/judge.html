@@ -612,7 +612,9 @@ document.getElementById("roundInfo")
 .innerText =
 `${currentState.round}/${stage.total_rounds}`;
 
-document.getElementById("word").innerText = "Listen careful to the word...";
+document.getElementById("word").innerText =
+  currentState.current_word || currentState.word || "READY";
+  
 document.getElementById("timer")
 .innerText =
 currentState.time_left || 0;
@@ -716,6 +718,12 @@ try{
 
 if(!currentState)return;
 
+  if (!currentState?.student?.id) {
+  document.getElementById("status").innerText =
+    "No active participant";
+  return;
+  }
+
 const result = await api({
 
 action:"saveJudgeVote",
@@ -733,7 +741,7 @@ student_id:
 currentState.student.id,
 
 word:
-currentState.word,
+  currentState.current_word || currentState.word,
 
 vote,
 

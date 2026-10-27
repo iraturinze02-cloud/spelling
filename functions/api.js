@@ -19,6 +19,7 @@ console.log("ACTION:", action);
 
   try {
     
+    
 
     // =====================================================
     // LOGIN (YOU HAD SEPARATE FILE BEFORE)
@@ -63,6 +64,181 @@ console.log("ACTION:", action);
 
       return Response.json({ success: true });
     }
+
+    
+    // =====================================================
+    // LIST JUDGE ACCOUNTS
+    // =====================================================
+    if (action === "listJudgeAccounts") {
+      const judges = await sql`
+        SELECT id, full_name, username, role
+        FROM users
+        WHERE role = 'judge'
+        ORDER BY full_name ASC
+      `;
+
+      return Response.json({
+        success: true,
+        judges
+      });
+    }
+
+    // =====================================================
+    // ADD JUDGE
+    // =====================================================
+    if (action === "addJudge") {
+      const fullName = String(body.full_name || "").trim();
+      const username = String(body.username || "").trim();
+      const password = String(body.password || "");
+
+      if (!fullName || !username || !password) {
+        return Response.json({
+          success: false,
+          error: "Name, username, and password are required."
+        }, { status: 400 });
+      }
+
+      const existing = await sql`
+        SELECT id
+        FROM users
+        WHERE LOWER(username) = LOWER(${username})
+        LIMIT 1
+      `;
+
+      if (existing.length) {
+        return Response.json({
+          success: false,
+          error: "That username is already in use."
+        }, { status: 409 });
+      }
+
+      await sql`
+        INSERT INTO users (full_name, username, password, role)
+        VALUES (${fullName}, ${username}, ${password}, 'judge')
+      `;
+
+      return Response.json({
+        success: true,
+        message: "Judge added successfully."
+      }, { status: 201 });
+    }
+
+    // =====================================================
+    // UPDATE JUDGE
+    // =====================================================
+    if (action === "updateJudge") {
+      const id = Number(body.id);
+      const fullName = String(body.full_name || "").trim();
+      const username = String(body.username || "").trim();
+      const password = String(body.password || "");
+
+      if (!Number.isInteger(id) || id <= 0 || !fullName || !username) {
+        return Response.json({
+          success: false,
+          error: "Valid ID, name, and username are required."
+        }, { status: 400 });
+      }
+
+      const judge = await sql`
+        SELECT id
+        FROM users
+        WHERE id = ${id}
+          AND role = 'judge'
+        LIMIT 1
+      `;
+
+      if (!judge.length) {
+        return Response.json({
+          success: false,
+          error: "Judge not found."
+        }, { status: 404 });
+      }
+
+      const duplicate = await sql`
+        SELECT id
+        FROM users
+        WHERE LOWER(username) = LOWER(${username})
+          AND id <> ${id}
+        LIMIT 1
+      `;
+
+      if (duplicate.length) {
+        return Response.json({
+          success: false,
+          error: "That username is already in use."
+        }, { status: 409 });
+      }
+
+      if (password) {
+        await sql`
+          UPDATE users
+          SET full_name = ${fullName},
+              username = ${username},
+              password = ${password}
+          WHERE id = ${id}
+            AND role = 'judge'
+        `;
+      } else {
+        await sql`
+          UPDATE users
+          SET full_name = ${fullName},
+              username = ${username}
+          WHERE id = ${id}
+            AND role = 'judge'
+        `;
+      }
+
+      return Response.json({
+        success: true,
+        message: "Judge updated successfully."
+      });
+    }
+
+    // =====================================================
+    // DELETE JUDGE
+    // =====================================================
+    if (action === "deleteJudge") {
+      const id = Number(body.id);
+
+      if (!Number.isInteger(id) || id <= 0) {
+        return Response.json({
+          success: false,
+          error: "A valid judge ID is required."
+        }, { status: 400 });
+      }
+
+      const judge = await sql`
+        SELECT id
+        FROM users
+        WHERE id = ${id}
+          AND role = 'judge'
+        LIMIT 1
+      `;
+
+      if (!judge.length) {
+        return Response.json({
+          success: false,
+          error: "Judge not found."
+        }, { status: 404 });
+      }
+
+      await sql`
+        DELETE FROM competition_judges
+        WHERE judge_id = ${id}
+      `;
+
+      await sql`
+        DELETE FROM users
+        WHERE id = ${id}
+          AND role = 'judge'
+      `;
+
+      return Response.json({
+        success: true,
+        message: "Judge deleted successfully."
+      });
+    }
+
 
     // =====================================================
     // UPDATE STAGE SETTINGS

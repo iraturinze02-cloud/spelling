@@ -1,154 +1,203 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Login</title>
 
-<title>Login</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
 
-<style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
 
-body{
+        .box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
 
-font-family:Arial;
-background:#f3f4f6;
+        h2 {
+            text-align: center;
+            margin-top: 0;
+            color: #1f2937;
+        }
 
-display:flex;
-justify-content:center;
-align-items:center;
+        input {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-top: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 16px;
+        }
 
-height:100vh;
+        input:focus {
+            outline: 2px solid #93c5fd;
+            border-color: #2563eb;
+        }
 
-}
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 18px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
 
-.box{
+        button:hover {
+            background: #1d4ed8;
+        }
 
-background:white;
-padding:30px;
-border-radius:10px;
-width:320px;
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
 
-box-shadow:0 2px 10px rgba(0,0,0,.1);
-
-}
-
-input{
-
-width:100%;
-padding:12px;
-margin-top:10px;
-
-}
-
-button{
-
-width:100%;
-padding:12px;
-margin-top:15px;
-
-background:#2563eb;
-color:white;
-border:none;
-
-}
-
-</style>
-
+        #message {
+            margin-top: 14px;
+            font-size: 14px;
+            text-align: center;
+            color: #dc2626;
+        }
+    </style>
 </head>
 
 <body>
+    <div class="box">
+        <h2>System Login</h2>
 
-<div class="box">
+        <form id="loginForm">
+            <input
+                type="text"
+                id="username"
+                placeholder="Username"
+                autocomplete="username"
+                required
+            >
 
-<h2>System Login</h2>
+            <input
+                type="password"
+                id="password"
+                placeholder="Password"
+                autocomplete="current-password"
+                required
+            >
 
-<input
-type="text"
-id="username"
-placeholder="Username">
+            <button type="submit" id="loginButton">
+                LOGIN
+            </button>
 
-<input
-type="password"
-id="password"
-placeholder="Password">
+            <p id="message" role="alert"></p>
+        </form>
+    </div>
 
-<button onclick="login()">
+    <script>
+        const form = document.getElementById("loginForm");
+        const loginButton = document.getElementById("loginButton");
+        const message = document.getElementById("message");
 
-LOGIN
+        form.addEventListener("submit", login);
 
-</button>
+        async function login(event) {
+            event.preventDefault();
 
-</div>
+            const username = document
+                .getElementById("username")
+                .value.trim();
 
-<script>
-  async function login(){
+            const password = document
+                .getElementById("password")
+                .value;
 
-let username =
-document.getElementById(
-"username"
-).value;
+            message.textContent = "";
 
-let password =
-document.getElementById(
-"password"
-).value;
+            if (!username || !password) {
+                message.textContent =
+                    "Please enter your username and password.";
+                return;
+            }
 
-const res =
-await fetch(
-"/spellingLogin",
-{
+            loginButton.disabled = true;
+            loginButton.textContent = "LOGGING IN...";
 
-method:"POST",
+            try {
+                const response = await fetch("/spellingLogin", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        username,
+                        password
+                    })
+                });
 
-headers:{
-"Content-Type":
-"application/json"
-},
+                const data = await response.json();
 
-body:JSON.stringify({
+                if (!response.ok || !data.success) {
+                    message.textContent =
+                        data.error || "Invalid username or password.";
+                    return;
+                }
 
-username,
-password
+                if (!data.user || !data.user.role) {
+                    message.textContent =
+                        "The server returned an invalid user account.";
+                    return;
+                }
 
-})
+                if (
+                    data.user.role !== "teacher" &&
+                    data.user.role !== "judge"
+                ) {
+                    message.textContent =
+                        "This account does not have access to this system.";
+                    return;
+                }
 
-}
+                localStorage.setItem(
+                    "user",
+                    JSON.stringify(data.user)
+                );
 
-);
+                if (data.user.role === "teacher") {
+                    window.location.href =
+                        "/spelling/teacher-home.html";
+                } else {
+                    window.location.href =
+                        "/spelling/judge-home.html";
+                }
 
-const data =
-await res.json();
+            } catch (error) {
+                console.error("Login error:", error);
 
-if(!data.success){
-
-alert("Invalid credentials");
-
-return;
-
-}
-
-localStorage.setItem(
-"user",
-JSON.stringify(data.user)
-);
-
-if(data.user.role==="teacher"){
-
-window.location=
-"spelling/teacher-home.html";
-
-}
-else if(
-data.user.role==="judge"
-){
-
-window.location=
-"spelling/judge-home.html";
-
-}
-
-   }
-</script>
-
+                message.textContent =
+                    "Unable to connect to the server. Please try again.";
+            } finally {
+                loginButton.disabled = false;
+                loginButton.textContent = "LOGIN";
+            }
+        }
+    </script>
 </body>
-
 </html>

@@ -345,65 +345,89 @@ console.log("ACTION:", action);
       });
     }
 
-// =====================================================
-// ACTIVATE STAGE (FIXED)
-// =====================================================
-if (action === "activateStage") {
 
-  // 1. deactivate all stages
-  await sql`
-    UPDATE competition_stages
-    SET status='inactive'
-  `;
+    // =====================================================
+    // ACTIVATE STAGE - LIMITED TO ITS OWN COMPETITION
+    // =====================================================
+    if (action === "activateStage") {
+      const stageId = Number(body.stage_id);
 
-  // 2. activate selected stage
-  const stage = await sql`
-    UPDATE competition_stages
-    SET status='active'
-    WHERE id=${body.stage_id}
-    RETURNING *
-  `;
+      if (!Number.isInteger(stageId) || stageId <= 0) {
+        return Response.json({
+          success: false,
+          error: "A valid stage_id is required."
+        }, { status: 400 });
+      }
 
-  const activeStage = stage[0];
-
-  // 3. ONLY ensure progress exists for THIS stage
-  const existing = await sql`
-    SELECT 1
-    FROM student_stage_progress
-    WHERE competition_id=${activeStage.competition_id}
-      AND stage_number=${activeStage.stage_number}
-    LIMIT 1
-  `;
-
-  // ❗initialize Stage (or empty system)
-if (existing.length === 0 && activeStage.stage_number == 1){
-
-    const students = await sql`
-      SELECT id
-      FROM students
-      WHERE competition_id=${activeStage.competition_id}
-    `;
-
-    for (const student of students) {
-      await sql`
-        INSERT INTO student_stage_progress(
-          student_id,
-          competition_id,
-          stage_number,
-          status
-        )
-        VALUES(
-          ${student.id},
-          ${activeStage.competition_id},
-          ${activeStage.stage_number},
-          'active'
-        )
+      const selected = await sql`
+        SELECT *
+        FROM competition_stages
+        WHERE id = ${stageId}
+        LIMIT 1
       `;
-    }
-  }
 
-  return Response.json({ success: true });
-}
+      if (selected.length === 0) {
+        return Response.json({
+          success: false,
+          error: "Stage not found."
+        }, { status: 404 });
+      }
+
+      const stage = selected[0];
+
+      // Deactivate stages only in this competition.
+      await sql`
+        UPDATE competition_stages
+        SET status = 'inactive'
+        WHERE competition_id = ${stage.competition_id}
+      `;
+
+      // Activate the selected stage.
+      await sql`
+        UPDATE competition_stages
+        SET status = 'active'
+        WHERE id = ${stageId}
+      `;
+
+      // Initialize stage 1 for students in this competition.
+      // Do not automatically reactivate eliminated students
+      // in later stages.
+      if (Number(stage.stage_number) === 1) {
+        const students = await sql`
+          SELECT id
+          FROM students
+          WHERE competition_id = ${stage.competition_id}
+        `;
+
+        for (const student of students) {
+          await sql`
+            INSERT INTO student_stage_progress (
+              student_id,
+              competition_id,
+              stage_number,
+              status
+            )
+            VALUES (
+              ${student.id},
+              ${stage.competition_id},
+              ${stage.stage_number},
+              'active'
+            )
+            ON CONFLICT DO NOTHING
+          `;
+        }
+      }
+
+      return Response.json({
+        success: true,
+        message: "Stage activated successfully.",
+        stage_id: stageId,
+        competition_id: stage.competition_id,
+        stage_number: stage.stage_number
+      });
+    }
+
+    
     // =====================================================
     // CREATE COMPETITION
     // =====================================================
@@ -669,105 +693,265 @@ message:error.message
     
 
     // =====================================================
-    // GET STUDENTS (FILTERED)
+    // STUDENT MANAGEMENT
+    // Actions: getStudents, addStudent, updateStudent, deleteStudent
     // =====================================================
+
+    // -----------------------------------------------------
+    // GET STUDENTS ASSIGNED TO A COMPETITION STAGE
+    // -----------------------------------------------------
     if (action === "getStudents") {
+      const competitionId = Number(body.competition_id);
+      const stageNumber = Number(body.stage_number);
 
-  const students = await sql`
-
-    SELECT
-      s.*,
-      sp.stage_number,
-      sp.status
-
-    FROM student_stage_progress sp
-
-    JOIN students s
-      ON s.id = sp.student_id
-
-    WHERE sp.competition_id=${body.competition_id}
-      AND sp.stage_number=${body.stage_number}
-      AND sp.status='active'
-
-    ORDER BY s.full_name ASC
-
-  `;
-
-  return Response.json({
-    success:true,
-    students
-  });
-    }
-    // =====================================================
-    // ADD STUDENT
-    // =====================================================
-    if (action === "addStudent") {
-
-      const full_name = body.full_name?.trim();
-      const class_name = body.class_name?.trim() || "";
-
-      if (!full_name) {
+      if (
+        !Number.isInteger(competitionId) || competitionId <= 0 ||
+        !Number.isInteger(stageNumber) || stageNumber <= 0
+      ) {
         return Response.json({
           success: false,
-          message: "Student name required"
+          error: "A valid competition_id and stage_number are required."
         }, { status: 400 });
       }
 
+      const students = await sql`
+        SELECT
+          s.*,
+          sp.stage_number,
+          sp.status AS stage_status
+        FROM student_stage_progress sp
+        JOIN students s
+          ON s.id = sp.student_id
+        WHERE sp.competition_id = ${competitionId}
+          AND sp.stage_number = ${stageNumber}
+          AND sp.status = 'active'
+        ORDER BY s.full_name ASC
+      `;
+
+      return Response.json({
+        success: true,
+        students
+      });
+    }
+
+    // -----------------------------------------------------
+    // ADD STUDENT AND ASSIGN TO SELECTED STAGE
+    // -----------------------------------------------------
+    if (action === "addStudent") {
+      const fullName = String(body.full_name || "").trim();
+      const gender = String(body.gender || "").trim();
+      const className = String(body.class_name || "").trim();
+      const competitionId = Number(body.competition_id);
+      const stageNumber = Number(body.stage_number);
+
+      if (!fullName || !gender || !className) {
+        return Response.json({
+          success: false,
+          error: "Student name, gender, and class are required."
+        }, { status: 400 });
+      }
+
+      if (
+        !Number.isInteger(competitionId) || competitionId <= 0 ||
+        !Number.isInteger(stageNumber) || stageNumber <= 0
+      ) {
+        return Response.json({
+          success: false,
+          error: "A valid competition and stage are required."
+        }, { status: 400 });
+      }
+
+      // Confirm that the selected competition exists.
+      const competition = await sql`
+        SELECT id
+        FROM competitions
+        WHERE id = ${competitionId}
+        LIMIT 1
+      `;
+
+      if (competition.length === 0) {
+        return Response.json({
+          success: false,
+          error: "Competition not found."
+        }, { status: 404 });
+      }
+
+      // Confirm that the selected stage belongs to this competition.
+      const stage = await sql`
+        SELECT id, stage_number
+        FROM competition_stages
+        WHERE competition_id = ${competitionId}
+          AND stage_number = ${stageNumber}
+        LIMIT 1
+      `;
+
+      if (stage.length === 0) {
+        return Response.json({
+          success: false,
+          error: "The selected stage was not found in this competition."
+        }, { status: 404 });
+      }
+
+      // Prevent the same name being added twice to this competition.
       const existing = await sql`
-        SELECT id FROM students
-        WHERE LOWER(full_name)=LOWER(${full_name})
+        SELECT id
+        FROM students
+        WHERE competition_id = ${competitionId}
+          AND LOWER(TRIM(full_name)) = LOWER(${fullName})
+        LIMIT 1
       `;
 
       if (existing.length > 0) {
         return Response.json({
           success: false,
-          message: "Student already exists"
-        }, { status: 400 });
+          error: "A student with this name already exists in this competition."
+        }, { status: 409 });
       }
 
-      const student = await sql`
-        INSERT INTO students(full_name, class_name)
-        VALUES(${full_name}, ${class_name})
+      // Save the student.
+      const inserted = await sql`
+        INSERT INTO students (
+          full_name,
+          gender,
+          class_name,
+          competition_id
+        )
+        VALUES (
+          ${fullName},
+          ${gender},
+          ${className},
+          ${competitionId}
+        )
         RETURNING *
       `;
 
-      return Response.json({ success: true, student });
-    }
+      const student = inserted[0];
 
-    // =====================================================
-    // UPDATE STUDENT
-    // =====================================================
-    if (action === "updateStudent") {
-
-      const updated = await sql`
-        UPDATE students
-        SET
-          full_name=${body.full_name},
-          gender=${body.gender},
-          class_name=${body.class_name}
-        WHERE id=${body.id}
-        RETURNING *
+      // Assign the student to the selected stage as active.
+      await sql`
+        INSERT INTO student_stage_progress (
+          student_id,
+          competition_id,
+          stage_number,
+          status
+        )
+        VALUES (
+          ${student.id},
+          ${competitionId},
+          ${stageNumber},
+          'active'
+        )
+        ON CONFLICT DO NOTHING
       `;
 
       return Response.json({
         success: true,
+        message: "Student added and assigned to the selected stage.",
+        student
+      }, { status: 201 });
+    }
+
+    // -----------------------------------------------------
+    // UPDATE STUDENT DETAILS
+    // -----------------------------------------------------
+    if (action === "updateStudent") {
+      const studentId = Number(body.id);
+      const fullName = String(body.full_name || "").trim();
+      const gender = String(body.gender || "").trim();
+      const className = String(body.class_name || "").trim();
+
+      if (!Number.isInteger(studentId) || studentId <= 0) {
+        return Response.json({
+          success: false,
+          error: "A valid student ID is required."
+        }, { status: 400 });
+      }
+
+      if (!fullName || !gender || !className) {
+        return Response.json({
+          success: false,
+          error: "Student name, gender, and class are required."
+        }, { status: 400 });
+      }
+
+      const updated = await sql`
+        UPDATE students
+        SET
+          full_name = ${fullName},
+          gender = ${gender},
+          class_name = ${className}
+        WHERE id = ${studentId}
+        RETURNING *
+      `;
+
+      if (updated.length === 0) {
+        return Response.json({
+          success: false,
+          error: "Student not found."
+        }, { status: 404 });
+      }
+
+      return Response.json({
+        success: true,
+        message: "Student updated successfully.",
         student: updated[0]
       });
     }
 
-    // =====================================================
+    // -----------------------------------------------------
     // DELETE STUDENT
-    // =====================================================
+    // -----------------------------------------------------
     if (action === "deleteStudent") {
+      const studentId = Number(body.id);
 
-      await sql`
-        DELETE FROM students
-        WHERE id=${body.id}
+      if (!Number.isInteger(studentId) || studentId <= 0) {
+        return Response.json({
+          success: false,
+          error: "A valid student ID is required."
+        }, { status: 400 });
+      }
+
+      const found = await sql`
+        SELECT id
+        FROM students
+        WHERE id = ${studentId}
+        LIMIT 1
       `;
 
-      return Response.json({ success: true });
+      if (found.length === 0) {
+        return Response.json({
+          success: false,
+          error: "Student not found."
+        }, { status: 404 });
+      }
+
+      // Remove stage assignments and draw assignments first.
+      await sql`
+        DELETE FROM student_stage_progress
+        WHERE student_id = ${studentId}
+      `;
+
+      await sql`
+        DELETE FROM student_draws
+        WHERE student_id = ${studentId}
+      `;
+
+      // Preserve word-attempt and judging history.
+      // If foreign keys prevent deletion, the database will
+      // return an error rather than silently deleting history.
+      await sql`
+        DELETE FROM students
+        WHERE id = ${studentId}
+      `;
+
+      return Response.json({
+        success: true,
+        message: "Student deleted successfully."
+      });
     }
 
+    
+    
     // =====================================================
     // UPDATE COMPETITION STATE
     // =====================================================

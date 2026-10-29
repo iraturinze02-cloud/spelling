@@ -1,5 +1,32 @@
 import { neon } from "@neondatabase/serverless";
 
+/**
+ * Broadcast saved changes to connected competition screens.
+ * Configure a Durable Object binding named REALTIME_DO in Cloudflare Pages.
+ */
+async function broadcastCompetition(context, competitionId, event = {}) {
+  try {
+    const namespace = context.env.REALTIME_DO;
+    if (!namespace || competitionId === undefined || competitionId === null || competitionId === "") return;
+
+    const id = namespace.idFromName(`competition:${String(competitionId)}`);
+    const room = namespace.get(id);
+    await room.fetch("https://realtime.internal/broadcast", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "competition-update",
+        competition_id: String(competitionId),
+        event,
+        sent_at: Date.now()
+      })
+    });
+  } catch (error) {
+    // Keep the database action successful even if realtime is temporarily unavailable.
+    console.error("Realtime broadcast failed:", error?.message || error);
+  }
+}
+
 export async function onRequest(context) {
 
   const sql = neon(context.env.NEON_URL);
@@ -1178,6 +1205,8 @@ participant_done=EXCLUDED.participant_done
 
 `;
 
+await broadcastCompetition(context, body.competition_id, { action: "updateState" });
+
 return Response.json({
 success:true
 });
@@ -1210,6 +1239,18 @@ competition_status='Waiting To Start'
 WHERE competition_id=${body.competition_id}
 
 `;
+
+let resetCompetitionId = body.competition_id;
+if (!resetCompetitionId) {
+  const activeForReset = await sql`
+    SELECT id FROM competitions
+    WHERE status='active'
+    ORDER BY id DESC
+    LIMIT 1
+  `;
+  resetCompetitionId = activeForReset[0]?.id;
+}
+await broadcastCompetition(context, resetCompetitionId, { action: "resetState" });
 
 return Response.json({
 success:true
@@ -1889,6 +1930,13 @@ ${body.vote}
 
 `;
 
+await broadcastCompetition(context, body.competition_id, {
+  action: "saveJudgeVote",
+  student_id: body.student_id,
+  round_number: body.round_number,
+  word: body.word
+});
+
 return Response.json({
 success:true
 });
@@ -1975,6 +2023,8 @@ WHERE competition_id=${body.competition_id}
 
 `;
 
+await broadcastCompetition(context, body.competition_id, { action: "openVoting" });
+
 return Response.json({
 success:true
 });
@@ -1999,6 +2049,8 @@ finalized=true
 WHERE competition_id=${body.competition_id}
 
 `;
+
+await broadcastCompetition(context, body.competition_id, { action: "closeVoting" });
 
 return Response.json({
 success:true

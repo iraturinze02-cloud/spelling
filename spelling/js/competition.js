@@ -813,41 +813,96 @@ updateTeacherStatus(
 // RESET PARTICIPANT
 // ==========================================
 
-function resetParticipant(){
 
-competitionState.currentWordIndex = 0;
+async function resetParticipant() {
+  if (!competitionState.competition || !competitionState.stage) {
+    alert("No active competition or stage was found.");
+    return;
+  }
 
-document.getElementById(
-"roundScore"
-).innerText = "0";
+  if (!competitionState.students[competitionState.currentStudentIndex]) {
+    alert("No current participant was found.");
+    return;
+  }
 
-prepareCurrentParticipant();
+  try {
+    // Restart the current participant from Round 1, Word 1
+    competitionState.started = false;
+    competitionState.currentRound = 1;
+    competitionState.currentWordIndex = 0;
+    competitionState.timeLeft = 0;
+    competitionState.usedTime = 0;
 
-updateTeacherStatus(
-"Participant Reset"
-);
+    const scoreElement = document.getElementById("roundScore");
 
+    if (scoreElement) {
+      scoreElement.innerText = "0";
+    }
+
+    // Wait for the participant's words to finish loading
+    await prepareCurrentParticipant();
+
+    // Save the reset state to the database and synchronize panels
+    await saveCompetitionState();
+
+    updateTeacherStatus("Participant Reset");
+
+  } catch (error) {
+    console.error("Reset participant failed:", error);
+    alert("Could not reset this participant. Please try again.");
+  }
 }
+
 
 // ==========================================
 // RESET COMPETITION
 // ==========================================
 
-async function resetCompetition(){
 
-const confirmed = confirm(
-"Reset competition?"
-);
+async function resetCompetition() {
+  const confirmed = confirm(
+    "Reset the entire competition and return to the first participant?"
+  );
 
-if(!confirmed)return;
+  if (!confirmed) return;
 
-await api({
-action:"resetState"
-});
+  const competitionId = competitionState.competition?.id;
 
-location.reload();
+  if (!competitionId) {
+    alert("No active competition was found.");
+    return;
+  }
 
+  try {
+    const result = await api({
+      action: "resetState",
+      competition_id: competitionId
+    });
+
+    if (!result || result.success !== true) {
+      alert(result?.message || "Could not reset the competition.");
+      return;
+    }
+
+    // Reset the teacher panel's local state
+    competitionState.currentStudentIndex = 0;
+    competitionState.currentRound = 1;
+    competitionState.currentWordIndex = 0;
+    competitionState.currentStudent = null;
+    competitionState.currentWord = "";
+    competitionState.timeLeft = 0;
+    competitionState.usedTime = 0;
+    competitionState.started = false;
+
+    // Reload only after the server confirms the reset
+    location.reload();
+
+  } catch (error) {
+    console.error("Reset competition failed:", error);
+    alert("Could not reset the competition. Please try again.");
+  }
 }
+
 
 // ==========================================
 // SAVE STATE

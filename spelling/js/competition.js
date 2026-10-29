@@ -269,52 +269,49 @@ prepareCurrentWord();
 // ==========================================
 // PREPARE WORD
 // ==========================================
-function prepareCurrentWord(){
 
-const stage = competitionState.stage;
-if(!stage) return;
+function prepareCurrentWord() {
+  const stage = competitionState.stage;
+  if (!stage) return;
 
-const words = competitionState.words || [];
+  const words = competitionState.words || [];
 
-if(words.length === 0){
-  competitionState.currentWord = "NO WORDS";
-  document.getElementById("word").innerText = "NO WORDS";
-  return;
-}
+  if (words.length === 0) {
+    competitionState.currentWord = "NO WORDS";
+    document.getElementById("word").innerText = "NO WORDS";
+    return;
+  }
 
-// SIMPLE PER-GROUP INDEXING (FIX)
-const index = competitionState.currentWordIndex;
+  // Calculate the word position across all rounds.
+  const wordsPerRound = Math.max(
+    1,
+    Number(stage.words_per_round) || 3
+  );
 
-const word = words[index];
+  const globalWordIndex =
+    ((competitionState.currentRound - 1) * wordsPerRound) +
+    competitionState.currentWordIndex;
 
-// fallback only if truly finished
-if(!word){
-  competitionState.currentWord = "FINISHED";
-  document.getElementById("word").innerText = "FINISHED";
-  return;
-}
+  const word = words[globalWordIndex];
 
-competitionState.currentWord = word;
+  if (!word) {
+    competitionState.currentWord = "FINISHED";
+    document.getElementById("word").innerText = "FINISHED";
+    return;
+  }
 
-// DISPLAY WORD
-document.getElementById("word").innerText = word;
+  competitionState.currentWord = word;
 
-// ROUND INFO
-document.getElementById("roundInfo").innerText =
-`${competitionState.currentRound}/${stage.total_rounds}`;
+  document.getElementById("word").innerText = word;
 
-// TIMER
+  document.getElementById("roundInfo").innerText =
+    `${competitionState.currentRound}/${stage.total_rounds}`;
 
-// TIMER
-competitionState.timeLeft =
-calculateAllowedTime(word);
+  competitionState.timeLeft = calculateAllowedTime(word);
+  competitionState.usedTime = 0;
 
-competitionState.usedTime = 0;
-
-updateTeacherTimer();
-
-disableVotingButtons();
-
+  updateTeacherTimer();
+  disableVotingButtons();
 }
 
 // ==========================================
@@ -475,9 +472,6 @@ const rawWords = res?.words || [];
 competitionState.words = rawWords.map(w =>
   typeof w === "string" ? w : w.word
 ).filter(Boolean);
-
-// RESET INDEX FOR NEW STUDENT (CRITICAL FIX)
-competitionState.currentWordIndex = 0;
 
 prepareCurrentWord();
 

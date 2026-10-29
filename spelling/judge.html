@@ -632,20 +632,45 @@ function connectJudgeRealtime() {
 // REALTIME SYNC
 // ========================================
 
-async function syncRealtime(){
 
-const res = await api({
-action:"getCompetitionRealtime",
-competition_id:competition.id
-});
+async function syncRealtime() {
+  if (!competition?.id) return;
 
-if(!res || !res.success)return;
+  try {
+    const res = await api({
+      action: "getCompetitionRealtime",
+      competition_id: competition.id,
+      judge_id: localStorage.getItem("userId")
+    });
 
-currentState = res;
+    if (!res?.success) return;
 
-updateUI();
+    currentState = res;
 
+    const vote = res.my_vote?.vote || null;
+    judgeVoteSubmitted = Boolean(vote);
+
+    if (vote) {
+      document.getElementById("myVote").innerText =
+        vote.toUpperCase();
+
+      document.getElementById("voteTime").innerText =
+        res.my_vote.created_at
+          ? new Date(res.my_vote.created_at).toLocaleTimeString()
+          : "--";
+    } else {
+      document.getElementById("myVote").innerText =
+        "No vote submitted";
+
+      document.getElementById("voteTime").innerText = "--";
+    }
+
+    updateUI();
+  } catch (error) {
+    console.error("Realtime sync failed:", error);
+  }
 }
+
 // ========================================
 // UPDATE UI
 // ========================================
@@ -665,9 +690,8 @@ document.getElementById("word").innerText =
   
 updateJudgeTimerDisplay();
 
-document.getElementById("wordIndex")
-.innerText =
-(currentState.word_index || 0) + 1;
+document.getElementById("wordIndex").innerText =
+  (Number(currentState.word_index) || 0) + 1;
 
 document.getElementById("voteCount")
 .innerText =

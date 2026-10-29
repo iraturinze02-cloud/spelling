@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Timer Display</title>
+
+<style>
+
+body{
+margin:0;
+background:black;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+#timer{
+font-size:300px;
+color:white;
+font-weight:bold;
+font-family:Arial;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="timer">0</div>
+
+<script>
+async function api(data) {
+  const res = await fetch("/api", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+  return await res.json();
+}
+
+let competition = null;
+let realtimeSocket = null;
+let reconnectTimer = null;
+let fallbackTimer = null;
+let displayInterval = null;
+let displaySignature = "";
+let displayDeadline = 0;
+
+async function init() {
+  try {
+    const comp = await api({ action: "getActiveCompetition" });
+    competition = comp?.competition || null;
+
+    if (!competition) {
+      document.getElementById("timer").innerText = "0";
+      return;
+    }
+
+    await sync();
+    connectRealtime();
+
+    // Keep a low-frequency fallback if WebSocket disconnects.
+    fallbackTimer = setInterval(sync, 15000);
+  } catch (error) {
+    console.error("Could not initialize timer screen:", error);
+  }
+}
+
+function connectRealtime() {
+  if (!competition?.id) return;
+
+  if (
+    realtimeSocket &&
+    (realtimeSocket.readyState === WebSocket.CONNECTING ||
+      realtimeSocket.readyState === WebSocket.OPEN)
+  ) {
+    return;
+  }
+
+  const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+  const url =
+    `${protocol}//${location.host}/api/realtime?competition_id=${encodeURIComponent(competition.id)}`;
+
+  try {
+    realtimeSocket = new WebSocket(url);
+
+    realtimeSocket.addEventListener("message", () => {
+      sync();
+    });
+
+    realtimeSocket.addEventListener("close", () => {
+      realtimeSocket = null;
+      clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(connectRealtime, 3000);
+    });
+
+    realtimeSocket.addEventListener("error", () => {
+      realtimeSocket?.close();
+    });
+  } catch (error) {
+    console.error("Timer realtime connection failed:", error);
+  }
+}
+
+async function sync() {
+  if (!competition) return;
+
+  try {
+    const state = await api({
+      action: "getCompetitionRealtime",
+      competition_id: competition.id
+    });
+
+    if (!state?.success) return;
+    updateTimer(state);
+  } catch (error) {
+    console.error("Timer sync failed:", error);
+  }
+}
+
+function updateTimer(state) {
+  const signature = [
+    state.started ? "1" : "0",
+    state.time_left ?? 0,
+    state.student_id ?? "",
+    state.round ?? "",
+    state.word_index ?? "",
+    state.current_word ?? state.word ?? ""
+  ].join("|");
+
+  if (signature === displaySignature) return;
+  displaySignature = signature;
+
+  clearInterval(displayInterval);
+  const initialTime = Math.max(0, Number(state.time_left) || 0);
+
+  if (state.started) {
+    displayDeadline = Date.now() + initialTime * 1000;
+
+    const render = () => {
+      const remaining = Math.max(0, Math.ceil((displayDeadline - Date.now()) / 1000));
+      document.getElementById("timer").innerText = remaining;
+    };
+
+    render();
+    displayInterval = setInterval(render, 200);
+  } else {
+    document.getElementById("timer").innerText = initialTime;
+  }
+}
+
+init();
+</script>
+
+</body>
+</html>

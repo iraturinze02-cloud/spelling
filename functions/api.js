@@ -2332,6 +2332,10 @@ if (final_status === "correct") {
     // =====================================================
 // GET COMPETITION REALTIME
 // =====================================================
+
+ // =====================================================
+ // GET COMPETITION REALTIME
+ // =====================================================
 if (action === "getCompetitionRealtime") {
   try {
     if (!body.competition_id) {
@@ -2358,7 +2362,7 @@ if (action === "getCompetitionRealtime") {
 
     const state = stateRes[0];
 
-    // 2. GET ACTIVE STAGE
+    // 2. GET THE ACTIVE STAGE
     const stageRes = await sql`
       SELECT *
       FROM competition_stages
@@ -2377,25 +2381,37 @@ if (action === "getCompetitionRealtime") {
     const stage = stageRes[0];
     const stageNumber = Number(stage.stage_number);
 
-    // 3. GET STUDENTS IN DRAW ORDER
+    // 3. USE THE SAME ACTIVE STUDENT LIST AS THE TEACHER
     const students = await sql`
       SELECT
         s.id,
         s.full_name,
+        s.gender,
+        sp.stage_number,
+        d.group_id,
         d.draw_order,
-        d.group_id
-      FROM students s
+        g.group_number
+      FROM student_stage_progress sp
+      JOIN students s
+        ON s.id = sp.student_id
       JOIN student_draws d
-        ON d.student_id = s.id
-       AND d.competition_id = ${body.competition_id}
-       AND d.stage_number = ${stageNumber}
+        ON d.student_id = sp.student_id
+        AND d.competition_id = sp.competition_id
+        AND d.stage_number = sp.stage_number
+      LEFT JOIN word_groups g
+        ON g.id = d.group_id
+      WHERE sp.competition_id = ${body.competition_id}
+        AND sp.stage_number = ${stageNumber}
+        AND sp.status = 'active'
       ORDER BY d.draw_order ASC
     `;
 
-    const studentIndex = Number(state.current_student_index) || 0;
+    const studentIndex =
+      Math.max(0, Number(state.current_student_index) || 0);
+
     const student = students[studentIndex] || null;
 
-    // 4. LOAD WORDS FOR THE STUDENT'S GROUP
+    // 4. LOAD WORDS FOR THIS STUDENT'S GROUP
     let words = [];
 
     if (student?.group_id) {
@@ -2409,9 +2425,17 @@ if (action === "getCompetitionRealtime") {
       words = wordsRes.map(item => item.word);
     }
 
-    // 5. CALCULATE THE WORD INDEX ACROSS ALL ROUNDS
-    const round = Number(state.current_round) || 1;
-    const wordPosition = Number(state.current_word_index) || 0;
+    // 5. CALCULATE THE CURRENT WORD
+    const round = Math.max(
+      1,
+      Number(state.current_round) || 1
+    );
+
+    const wordPosition = Math.max(
+      0,
+      Number(state.current_word_index) || 0
+    );
+
     const wordsPerRound = Math.max(
       1,
       Number(stage.words_per_round) || 3
@@ -2420,9 +2444,10 @@ if (action === "getCompetitionRealtime") {
     const globalWordIndex =
       ((round - 1) * wordsPerRound) + wordPosition;
 
-    const currentWord = words[globalWordIndex] || "FINISHED";
+    const currentWord =
+      words[globalWordIndex] || "FINISHED";
 
-    // 6. GET VOTES FOR THIS STUDENT, STAGE, ROUND AND WORD
+    // 6. GET VOTES FOR THE CURRENT WORD
     let voteCount = 0;
     let myVote = null;
 
@@ -2439,7 +2464,7 @@ if (action === "getCompetitionRealtime") {
 
       voteCount = votes[0]?.total || 0;
 
-      // 7. GET THE CURRENT JUDGE'S VOTE, IF PROVIDED
+      // 7. GET THIS JUDGE'S VOTE, IF PROVIDED
       if (body.judge_id) {
         const ownVote = await sql`
           SELECT vote, created_at
@@ -2458,7 +2483,7 @@ if (action === "getCompetitionRealtime") {
       }
     }
 
-    // 8. RETURN SYNCHRONIZED COMPETITION DATA
+    // 8. RETURN SYNCHRONIZED DATA
     return Response.json({
       success: true,
       stage_number: stageNumber,
@@ -2496,6 +2521,7 @@ if (action === "getCompetitionRealtime") {
     );
   }
 }
+
     // =====================================================
     // GET STUDENTS IN A COMPETITION 
     // =====================================================

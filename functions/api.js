@@ -2333,99 +2333,168 @@ if (final_status === "correct") {
 // GET COMPETITION REALTIME
 // =====================================================
 if (action === "getCompetitionRealtime") {
+  try {
+    if (!body.competition_id) {
+      return Response.json(
+        { success: false, message: "competition_id is required" },
+        { status: 400 }
+      );
+    }
 
-  const stateRes = await sql`
-    SELECT *
-    FROM competition_state
-    WHERE competition_id=${body.competition_id}
-    LIMIT 1
-  `;
-
-  if (stateRes.length === 0) {
-    return Response.json({ success: false });
-  }
-
-  const state = stateRes[0];
-
-  // ACTIVE STAGE
-  const stageRes = await sql`
-    SELECT *
-    FROM competition_stages
-    WHERE competition_id=${body.competition_id}
-      AND status='active'
-    LIMIT 1
-  `;
-
-  const stage = stageRes[0];
-
-  // ===============================
-  // 1. GET STUDENTS (DRAW ORDER ONLY)
-  // ===============================
-  const students = await sql`
-    SELECT
-      s.id,
-      s.full_name,
-      d.draw_order,
-      d.group_id
-    FROM students s
-    JOIN student_draws d
-      ON s.id = d.student_id
-      AND d.competition_id = ${body.competition_id}
-      AND d.stage_number = ${stage.stage_number}
-    ORDER BY d.draw_order ASC
-  `;
-
-  const student = students[state.current_student_index];
-
-  // ===============================
-  // 2. SAFE WORD LOADING (PER STUDENT GROUP)
-  // ===============================
-  let words = [];
-
-  if (student?.group_id) {
-
-    const wordsRes = await sql`
-      SELECT w.word
-      FROM words w
-      WHERE w.group_id = ${student.group_id}
-      ORDER BY w.id ASC
+    // 1. GET SAVED COMPETITION STATE
+    const stateRes = await sql`
+      SELECT *
+      FROM competition_state
+      WHERE competition_id = ${body.competition_id}
+      LIMIT 1
     `;
 
-    words = wordsRes.map(w => w.word);
+    if (stateRes.length === 0) {
+      return Response.json({
+        success: false,
+        message: "Competition state not found"
+      });
+    }
+
+    const state = stateRes[0];
+
+    // 2. GET ACTIVE STAGE
+    const stageRes = await sql`
+      SELECT *
+      FROM competition_stages
+      WHERE competition_id = ${body.competition_id}
+        AND status = 'active'
+      LIMIT 1
+    `;
+
+    if (stageRes.length === 0) {
+      return Response.json({
+        success: false,
+        message: "No active stage found"
+      });
+    }
+
+    const stage = stageRes[0];
+    const stageNumber = Number(stage.stage_number);
+
+    // 3. GET STUDENTS IN DRAW ORDER
+    const students = await sql`
+      SELECT
+        s.id,
+        s.full_name,
+        d.draw_order,
+        d.group_id
+      FROM students s
+      JOIN student_draws d
+        ON d.student_id = s.id
+       AND d.competition_id = ${body.competition_id}
+       AND d.stage_number = ${stageNumber}
+      ORDER BY d.draw_order ASC
+    `;
+
+    const studentIndex = Number(state.current_student_index) || 0;
+    const student = students[studentIndex] || null;
+
+    // 4. LOAD WORDS FOR THE STUDENT'S GROUP
+    let words = [];
+
+    if (student?.group_id) {
+      const wordsRes = await sql`
+        SELECT word
+        FROM words
+        WHERE group_id = ${student.group_id}
+        ORDER BY id ASC
+      `;
+
+      words = wordsRes.map(item => item.word);
+    }
+
+    // 5. CALCULATE THE WORD INDEX ACROSS ALL ROUNDS
+    const round = Number(state.current_round) || 1;
+    const wordPosition = Number(state.current_word_index) || 0;
+    const wordsPerRound = Math.max(
+      1,
+      Number(stage.words_per_round) || 3
+    );
+
+    const globalWordIndex =
+      ((round - 1) * wordsPerRound) + wordPosition;
+
+    const currentWord = words[globalWordIndex] || "FINISHED";
+
+    // 6. GET VOTES FOR THIS STUDENT, STAGE, ROUND AND WORD
+    let voteCount = 0;
+    let myVote = null;
+
+    if (student && currentWord !== "FINISHED") {
+      const votes = await sql`
+        SELECT COUNT(*)::int AS total
+        FROM judge_votes
+        WHERE competition_id = ${body.competition_id}
+          AND stage_number = ${stageNumber}
+          AND student_id = ${student.id}
+          AND round_number = ${round}
+          AND word = ${currentWord}
+      `;
+
+      voteCount = votes[0]?.total || 0;
+
+      // 7. GET THE CURRENT JUDGE'S VOTE, IF PROVIDED
+      if (body.judge_id) {
+        const ownVote = await sql`
+          SELECT vote, created_at
+          FROM judge_votes
+          WHERE competition_id = ${body.competition_id}
+            AND stage_number = ${stageNumber}
+            AND student_id = ${student.id}
+            AND round_number = ${round}
+            AND word = ${currentWord}
+            AND judge_id = ${body.judge_id}
+          ORDER BY created_at DESC
+          LIMIT 1
+        `;
+
+        myVote = ownVote[0] || null;
+      }
+    }
+
+    // 8. RETURN SYNCHRONIZED COMPETITION DATA
+    return Response.json({
+      success: true,
+      stage_number: stageNumber,
+      total_rounds: Number(stage.total_rounds) || 3,
+      words_per_round: wordsPerRound,
+
+      student,
+      student_id: student?.id || null,
+      student_index: studentIndex,
+
+      round,
+      current_round: round,
+
+      word: currentWord,
+      current_word: currentWord,
+      word_index: globalWordIndex,
+      current_word_index: wordPosition,
+
+      time_left: Number(state.time_left) || 0,
+      started: Boolean(state.started),
+
+      vote_count: voteCount,
+      my_vote: myVote
+    });
+
+  } catch (error) {
+    console.error("getCompetitionRealtime error:", error);
+
+    return Response.json(
+      {
+        success: false,
+        message: "Could not load competition state"
+      },
+      { status: 500 }
+    );
   }
-
-  // ===============================
-  // 3. GLOBAL SYNC INDEX (SAFE)
-  // ===============================
-  const wordIndex = state.current_word_index || 0;
-
-  const currentWord = words[wordIndex] || "FINISHED";
-
-  // ===============================
-  // 4. VOTES
-  // ===============================
-  const votes = await sql`
-    SELECT COUNT(*)::int AS total
-    FROM judge_votes
-    WHERE competition_id=${body.competition_id}
-      AND student_id=${student?.id || 0}
-      AND round_number=${state.current_round}
-      AND word=${currentWord}
-  `;
-
-  return Response.json({
-    success: true,
-    student,
-    student_id: student?.id || null,
-    round: state.current_round,
-    current_round: state.current_round,
-    word: currentWord,
-    current_word: currentWord,
-    word_index: wordIndex,
-    time_left: state.time_left,
-    started: state.started,
-    vote_count: votes[0]?.total || 0
-  });
 }
     // =====================================================
     // GET STUDENTS IN A COMPETITION 

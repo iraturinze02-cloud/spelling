@@ -2411,19 +2411,25 @@ if (action === "getCompetitionRealtime") {
 
     const student = students[studentIndex] || null;
 
-    // 4. LOAD WORDS FOR THIS STUDENT'S GROUP
+    
+    // 4. LOAD WORDS USING THE SAME GROUP LOGIC AS THE TEACHER
     let words = [];
 
-    if (student?.group_id) {
+    if (student?.group_number != null) {
       const wordsRes = await sql`
-        SELECT word
-        FROM words
-        WHERE group_id = ${student.group_id}
-        ORDER BY id ASC
+        SELECT w.word
+        FROM words w
+        JOIN word_groups g
+          ON g.id = w.group_id
+        WHERE g.group_number = ${student.group_number}
+          AND g.competition_id = ${body.competition_id}
+          AND g.stage_number = ${stageNumber}
+        ORDER BY w.id ASC
       `;
 
       words = wordsRes.map(item => item.word);
     }
+
 
     // 5. CALCULATE THE CURRENT WORD
     const round = Math.max(

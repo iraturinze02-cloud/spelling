@@ -6,7 +6,7 @@ import { neon } from "@neondatabase/serverless";
  */
 async function broadcastCompetition(context, competitionId, event = {}) {
   try {
-    const namespace = context.env.REALTIME_DO;
+    const namespace = context.env.COMPETITION_ROOM;
     if (!namespace || competitionId === undefined || competitionId === null || competitionId === "") return;
 
     const id = namespace.idFromName(`competition:${String(competitionId)}`);

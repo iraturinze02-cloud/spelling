@@ -1,0 +1,22 @@
+{
+  "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
+  "name": "fila-competition-realtime",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-28",
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "COMPETITION_ROOM",
+        "class_name": "CompetitionRoom"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "CompetitionRoom"
+      ]
+    }
+  ]
+}

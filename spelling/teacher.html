@@ -4,11 +4,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Live Competition Control | Fila Marks</title>
+
+<title>Leader Control Panel | Fila Marks</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <style>
@@ -28,7 +31,9 @@
   --shadow: 0 5px 20px rgba(15, 23, 42, .055);
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 body {
   margin: 0;
@@ -104,7 +109,9 @@ button:disabled {
   font-weight: 700;
 }
 
-.top-btn:hover { background: rgba(255,255,255,.2); }
+.top-btn:hover {
+  background: rgba(255,255,255,.2);
+}
 
 .page {
   width: min(1440px, 94%);
@@ -158,7 +165,8 @@ button:disabled {
   margin-bottom: 20px;
 }
 
-.stat-card, .panel {
+.stat-card,
+.panel {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -347,7 +355,9 @@ button:disabled {
   font-weight: 800;
 }
 
-.control-group { margin-top: 20px; }
+.control-group {
+  margin-top: 22px;
+}
 
 .control-group h4 {
   margin: 0 0 11px;
@@ -376,17 +386,28 @@ button:disabled {
   gap: 8px;
 }
 
-.action-btn:hover { filter: brightness(.94); transform: translateY(-1px); }
+.action-btn:hover:not(:disabled) {
+  filter: brightness(.94);
+  transform: translateY(-1px);
+}
 
 .btn-blue { background: var(--blue); }
 .btn-dark { background: #334155; }
 .btn-green { background: var(--green); }
 .btn-orange { background: var(--orange); }
 .btn-red { background: var(--red); }
+
 .btn-light {
   background: #eff6ff;
   color: #1d4ed8;
   border: 1px solid #dbeafe;
+}
+
+.section-note {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.6;
+  margin: 9px 0 0;
 }
 
 .voting-status {
@@ -444,7 +465,9 @@ button:disabled {
   margin-bottom: 6px;
 }
 
-.judge-count strong { font-size: 20px; }
+.judge-count strong {
+  font-size: 20px;
+}
 
 .judge-placeholder {
   border: 1px dashed #cbd5e1;
@@ -462,6 +485,21 @@ button:disabled {
   font-size: 22px;
   color: #94a3b8;
   margin-bottom: 9px;
+}
+
+.responsibility-list {
+  font-size: 12px;
+  line-height: 1.9;
+  color: #475569;
+}
+
+.responsibility-list p {
+  margin: 8px 0;
+}
+
+.responsibility-list i {
+  color: var(--green);
+  margin-right: 7px;
 }
 
 .music-panel {
@@ -501,22 +539,65 @@ button:disabled {
 }
 
 @media(max-width: 900px) {
-  .main-grid { grid-template-columns: 1fr; }
-  .stats-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
 }
 
 @media(max-width: 520px) {
-  .page { width: 93%; margin-top: 19px; }
-  .topbar { padding: 15px 4%; }
-  .brand h1 { font-size: 14px; }
-  .top-btn { padding: 9px 10px; font-size: 10px; }
-  .stats-grid { gap: 9px; }
-  .stat-card { padding: 12px; gap: 9px; }
-  .stat-icon { width: 35px; height: 35px; font-size: 14px; }
-  .stat-value { font-size: 13px; }
-  .panel { padding: 15px; }
-  .button-grid { grid-template-columns: 1fr 1fr; }
-  .action-btn { font-size: 10px; padding: 10px 7px; }
+  .page {
+    width: 93%;
+    margin-top: 19px;
+  }
+
+  .topbar {
+    padding: 15px 4%;
+  }
+
+  .brand h1 {
+    font-size: 14px;
+  }
+
+  .top-btn {
+    padding: 9px 10px;
+    font-size: 10px;
+  }
+
+  .stats-grid {
+    gap: 9px;
+  }
+
+  .stat-card {
+    padding: 12px;
+    gap: 9px;
+  }
+
+  .stat-icon {
+    width: 35px;
+    height: 35px;
+    font-size: 14px;
+  }
+
+  .stat-value {
+    font-size: 13px;
+  }
+
+  .panel {
+    padding: 15px;
+  }
+
+  .button-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .action-btn {
+    font-size: 10px;
+    padding: 10px 7px;
+  }
 }
 </style>
 </head>
@@ -524,266 +605,751 @@ button:disabled {
 <body>
 
 <header class="topbar">
+
   <div class="brand">
-    <div class="brand-icon"><i class="fa-solid fa-spell-check"></i></div>
+    <div class="brand-icon">
+      <i class="fa-solid fa-spell-check"></i>
+    </div>
+
     <div>
       <h1>FILA MARKS</h1>
-      <p>LIVE SPELLING COMPETITION CONTROL</p>
+      <p>LEADER CONTROL PANEL</p>
     </div>
   </div>
 
   <div class="top-actions">
+
     <button class="top-btn" onclick="goLeaderboard()">
-      <i class="fa-solid fa-ranking-star"></i> Leaderboard
+      <i class="fa-solid fa-ranking-star"></i>
+      Leaderboard
     </button>
+
     <button class="top-btn" onclick="goHome()">
-      <i class="fa-solid fa-house"></i> Dashboard
+      <i class="fa-solid fa-house"></i>
+      Dashboard
     </button>
+
   </div>
+
 </header>
+
 
 <main class="page">
 
+  <!-- PAGE HEADING -->
+
   <section class="page-heading">
+
     <div>
       <h2 id="competitionTitle">Live Competition</h2>
       <p id="stageTitle">Competition control centre</p>
     </div>
+
     <div class="live-pill">
       <span class="live-dot"></span>
       LEADER CONTROL PANEL
     </div>
+
   </section>
 
+
+  <!-- COMPETITION OVERVIEW -->
+
   <section class="stats-grid">
+
     <div class="stat-card">
-      <div class="stat-icon"><i class="fa-solid fa-user-graduate"></i></div>
+      <div class="stat-icon">
+        <i class="fa-solid fa-user-graduate"></i>
+      </div>
+
       <div>
         <div class="stat-label">Current Participant</div>
         <div class="stat-value" id="studentName">Loading...</div>
       </div>
     </div>
 
+
     <div class="stat-card">
-      <div class="stat-icon"><i class="fa-solid fa-repeat"></i></div>
+      <div class="stat-icon">
+        <i class="fa-solid fa-repeat"></i>
+      </div>
+
       <div>
         <div class="stat-label">Current Round</div>
         <div class="stat-value" id="roundInfo">-</div>
       </div>
     </div>
 
+
     <div class="stat-card">
-      <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
+      <div class="stat-icon">
+        <i class="fa-solid fa-star"></i>
+      </div>
+
       <div>
         <div class="stat-label">Round Score</div>
         <div class="stat-value" id="roundScore">0</div>
       </div>
     </div>
 
+
     <div class="stat-card">
-      <div class="stat-icon"><i class="fa-solid fa-trophy"></i></div>
+      <div class="stat-icon">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+
       <div>
         <div class="stat-label">Total Score</div>
         <div class="stat-value" id="totalScore">0</div>
       </div>
     </div>
+
   </section>
+
 
   <section class="main-grid">
 
-    <!-- LEFT: LIVE COMPETITION -->
+
+    <!-- LEFT COLUMN -->
+
     <div>
+
+
+      <!-- LIVE COMPETITION DISPLAY -->
+
       <div class="panel">
+
         <div class="panel-heading">
-          <h3><i class="fa-solid fa-display"></i> Live Competition</h3>
-          <small>Participant and word display</small>
+          <h3>
+            <i class="fa-solid fa-display"></i>
+            Live Competition
+          </h3>
+
+          <small>Read-only supervision</small>
         </div>
+
 
         <div class="participant-card">
-          <div class="participant-label">Participant on the floor</div>
-          <div class="participant-name" id="participantDisplay">Waiting for participant</div>
-          <div class="participant-subtitle">Current competition participant</div>
+
+          <div class="participant-label">
+            Participant on the floor
+          </div>
+
+          <div class="participant-name" id="participantDisplay">
+            Waiting for participant
+          </div>
+
+          <div class="participant-subtitle">
+            Current competition participant
+          </div>
+
         </div>
+
 
         <div class="word-box">
-          <div class="word-label">Current spelling word</div>
-          <div class="word-text" id="word">Waiting...</div>
+
+          <div class="word-label">
+            Current spelling word
+          </div>
+
+          <div class="word-text" id="word">
+            Waiting...
+          </div>
+
         </div>
+
+
+        <!-- LEADER CAN ONLY MONITOR THE TIMER -->
 
         <div class="timer-box">
-          <div class="timer-label">Competition Timer</div>
-          <div class="timer" id="timer">00:00</div>
-          <div class="status-line" id="status">Waiting to start</div>
+
+          <div class="timer-label">
+            <i class="fa-solid fa-stopwatch"></i>
+            Competition Timer · Monitor Only
+          </div>
+
+          <div class="timer" id="timer">
+            00:00
+          </div>
+
+          <div class="status-line" id="status">
+            Waiting to start
+          </div>
+
+          <p class="section-note">
+            Timer operation belongs to the Timekeeper.
+            The Leader can monitor its status and respond when time expires.
+          </p>
+
         </div>
 
+
         <div class="info-grid">
+
           <div class="info-box">
             <span>Round</span>
             <strong id="liveRound">-</strong>
           </div>
+
           <div class="info-box">
             <span>Round Score</span>
             <strong id="liveRoundScore">0</strong>
           </div>
+
           <div class="info-box">
             <span>Total Score</span>
             <strong id="liveTotalScore">0</strong>
           </div>
+
         </div>
+
       </div>
 
+
+      <!-- LEADER CONTROLS -->
+
       <div class="panel">
+
         <div class="panel-heading">
-          <h3><i class="fa-solid fa-sliders"></i> Competition Controls</h3>
-          <small>Leader actions</small>
+
+          <h3>
+            <i class="fa-solid fa-shield-halved"></i>
+            Leader Controls
+          </h3>
+
+          <small>Competition management</small>
+
         </div>
 
-        <div class="control-group">
-          <h4>Timer controls</h4>
-          <div class="button-grid">
-            <button class="action-btn btn-green" onclick="startWord()">
-              <i class="fa-solid fa-play"></i> Start Timer
-            </button>
-            <button class="action-btn btn-orange" onclick="stopTimer()">
-              <i class="fa-solid fa-pause"></i> Stop Timer
-            </button>
-          </div>
-        </div>
+
+        <!-- PARTICIPANT MANAGEMENT -->
 
         <div class="control-group">
-          <h4>Word and participant controls</h4>
+
+          <h4>
+            <i class="fa-solid fa-users"></i>
+            Participant Management
+          </h4>
+
           <div class="button-grid">
-            <button class="action-btn btn-blue" onclick="nextWord()">
-              <i class="fa-solid fa-forward"></i> Next Word
-            </button>
+
             <button class="action-btn btn-blue" onclick="nextParticipant()">
-              <i class="fa-solid fa-user-plus"></i> Next Participant
+              <i class="fa-solid fa-user-plus"></i>
+              Next Participant
             </button>
-          </div>
-        </div>
 
-        <div class="control-group">
-          <h4>Result control</h4>
-          <div class="button-grid">
-            <button class="action-btn btn-dark" onclick="finalizeResult()">
-              <i class="fa-solid fa-check-double"></i> Finalize Result
-            </button>
-          </div>
-        </div>
-
-        <div class="control-group">
-          <h4>Additional controls</h4>
-          <div class="button-grid">
-            <button class="action-btn btn-light" onclick="toggleMusicPanel()">
-              <i class="fa-solid fa-music"></i> Music Panel
-            </button>
             <button class="action-btn btn-orange" onclick="resetParticipant()">
-              <i class="fa-solid fa-rotate-left"></i> Reset Participant
+              <i class="fa-solid fa-rotate-left"></i>
+              Restart Participant
             </button>
+
+            <button class="action-btn btn-light" disabled title="Backend connection pending">
+              <i class="fa-solid fa-user-check"></i>
+              Confirm Participant
+            </button>
+
+            <button class="action-btn btn-light" disabled title="Backend connection pending">
+              <i class="fa-solid fa-dice"></i>
+              Draw Participant
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- JUDGE AUTHORIZATION -->
+
+        <div class="control-group">
+
+          <h4>
+            <i class="fa-solid fa-gavel"></i>
+            Judge Authorization
+          </h4>
+
+          <div class="button-grid">
+
+            <button class="action-btn btn-green" disabled title="Backend connection pending">
+              <i class="fa-solid fa-unlock"></i>
+              Authorize Voting
+            </button>
+
+            <button class="action-btn btn-dark" disabled title="Backend connection pending">
+              <i class="fa-solid fa-users-gear"></i>
+              Manage Judges
+            </button>
+
+          </div>
+
+          <p class="section-note">
+            Voting must be explicitly authorized by the Leader.
+            Timer expiry alone never opens voting.
+          </p>
+
+        </div>
+
+
+        <!-- RESULT MANAGEMENT -->
+
+        <div class="control-group">
+
+          <h4>
+            <i class="fa-solid fa-square-check"></i>
+            Result Management
+          </h4>
+
+          <div class="button-grid">
+
+            <button class="action-btn btn-blue" onclick="finalizeResult()">
+              <i class="fa-solid fa-check-double"></i>
+              Review / Confirm Result
+            </button>
+
+            <button class="action-btn btn-orange" disabled title="Backend connection pending">
+              <i class="fa-solid fa-scale-balanced"></i>
+              Resolve Tie
+            </button>
+
+          </div>
+
+          <p class="section-note">
+            The result must be reviewed and confirmed before competition progression.
+          </p>
+
+        </div>
+
+
+        <!-- COMPETITION PROGRESSION -->
+
+        <div class="control-group">
+
+          <h4>
+            <i class="fa-solid fa-forward-step"></i>
+            Competition Progression
+          </h4>
+
+          <div class="button-grid">
+
+            <button class="action-btn btn-blue" onclick="nextWord()">
+              <i class="fa-solid fa-forward"></i>
+              Next Word
+            </button>
+
+            <button class="action-btn btn-dark" disabled title="Backend connection pending">
+              <i class="fa-solid fa-flag-checkered"></i>
+              End Round
+            </button>
+
+            <button class="action-btn btn-dark" disabled title="Backend connection pending">
+              <i class="fa-solid fa-layer-group"></i>
+              End Stage
+            </button>
+
+            <button class="action-btn btn-green" disabled title="Backend connection pending">
+              <i class="fa-solid fa-play"></i>
+              Start Next Stage
+            </button>
+
+          </div>
+
+          <p class="section-note">
+            Progression must follow confirmed results and the competition rules.
+          </p>
+
+        </div>
+
+
+        <!-- PUBLIC DISPLAY -->
+
+        <div class="control-group">
+
+          <h4>
+            <i class="fa-solid fa-tv"></i>
+            Public Display Management
+          </h4>
+
+          <div class="button-grid">
+
+            <button class="action-btn btn-light" disabled title="Backend connection pending">
+              <i class="fa-solid fa-display"></i>
+              Live Display
+            </button>
+
+            <button class="action-btn btn-light" disabled title="Backend connection pending">
+              <i class="fa-solid fa-clock"></i>
+              Waiting Screen
+            </button>
+
+            <button class="action-btn btn-light" disabled title="Backend connection pending">
+              <i class="fa-solid fa-ranking-star"></i>
+              Show Leaderboard
+            </button>
+
+            <button class="action-btn btn-light" disabled title="Backend connection pending">
+              <i class="fa-solid fa-trophy"></i>
+              Final Results
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- EMERGENCY CONTROLS -->
+
+        <div class="control-group">
+
+          <h4>
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            Emergency Controls
+          </h4>
+
+          <div class="button-grid">
+
+            <button class="action-btn btn-orange" disabled title="Backend connection pending">
+              <i class="fa-solid fa-pause"></i>
+              Emergency Pause
+            </button>
+
+            <button class="action-btn btn-red" disabled title="Backend connection pending">
+              <i class="fa-solid fa-shield-halved"></i>
+              Emergency Override
+            </button>
+
             <button class="action-btn btn-red" onclick="resetCompetition()">
-              <i class="fa-solid fa-triangle-exclamation"></i> Reset Competition
+              <i class="fa-solid fa-rotate"></i>
+              Reset Competition
             </button>
+
+            <button class="action-btn btn-red" disabled title="Backend connection pending">
+              <i class="fa-solid fa-trash"></i>
+              Manage Records
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- ADDITIONAL CONTROLS -->
+
+        <div class="control-group">
+
+          <h4>
+            <i class="fa-solid fa-ellipsis"></i>
+            Additional Controls
+          </h4>
+
+          <div class="button-grid">
+
+            <button class="action-btn btn-light" onclick="toggleMusicPanel()">
+              <i class="fa-solid fa-music"></i>
+              Music Panel
+            </button>
+
+            <button class="action-btn btn-light" disabled title="Backend connection pending">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+              Activity History
+            </button>
+
           </div>
 
           <div class="music-panel" id="musicPanel">
+
             <h4>Competition Music</h4>
+
             <div class="music-actions">
-              <button onclick="playMusic()"><i class="fa-solid fa-play"></i> Play</button>
-              <button onclick="stopMusic()"><i class="fa-solid fa-stop"></i> Stop</button>
+
+              <button onclick="playMusic()">
+                <i class="fa-solid fa-play"></i>
+                Play
+              </button>
+
+              <button onclick="stopMusic()">
+                <i class="fa-solid fa-stop"></i>
+                Stop
+              </button>
+
             </div>
+
           </div>
+
         </div>
+
       </div>
+
     </div>
 
-    <!-- RIGHT: JUDGE SESSION -->
+
+    <!-- RIGHT COLUMN -->
+
     <aside>
+
+
+      <!-- JUDGE VOTING SESSION -->
+
       <div class="panel">
+
         <div class="panel-heading">
-          <h3><i class="fa-solid fa-gavel"></i> Judge Voting Session</h3>
+
+          <h3>
+            <i class="fa-solid fa-gavel"></i>
+            Judge Voting Session
+          </h3>
+
         </div>
 
+
         <div class="voting-status">
-          <strong>Voting session status</strong>
+
+          <strong>Voting Session Status</strong>
+
           <p id="votingStatus">
             No voting session information is connected to this panel yet.
-            The leader must open a session and authorize judges before they can vote.
+            The Leader must confirm the participant and authorize judges
+            before they can vote.
           </p>
+
           <div class="vote-progress">
             <span id="voteProgressBar"></span>
           </div>
+
         </div>
 
+
         <div class="judge-counts">
+
           <div class="judge-count">
-            <span>Judges authorized</span>
+            <span>Judges Authorized</span>
             <strong id="authorizedCount">—</strong>
           </div>
+
           <div class="judge-count">
-            <span>Votes received</span>
+            <span>Votes Received</span>
             <strong id="votesReceivedCount">—</strong>
           </div>
+
+        </div>
+
+
+        <div class="judge-counts">
+
+          <div class="judge-count">
+            <span>Votes Pending</span>
+            <strong id="pendingCount">—</strong>
+          </div>
+
+          <div class="judge-count">
+            <span>Session Result</span>
+            <strong id="sessionResult">—</strong>
+          </div>
+
+        </div>
+
+
+        <div class="judge-placeholder">
+
+          <i class="fa-solid fa-users-gear"></i>
+
+          <strong>Judge Authorization Management</strong>
+
+          <br>
+
+          This area will display assigned judges, their connection
+          status, individual voting authorization, submitted votes,
+          pending votes and vote cancellation options.
+
+          <br><br>
+
+          <strong>Backend connection pending.</strong>
+
+        </div>
+
+      </div>
+
+
+      <!-- RESULT REVIEW -->
+
+      <div class="panel">
+
+        <div class="panel-heading">
+
+          <h3>
+            <i class="fa-solid fa-square-poll-vertical"></i>
+            Result Review
+          </h3>
+
+        </div>
+
+        <div class="voting-status">
+
+          <strong>Current Result</strong>
+
+          <p>
+            The result summary and individual judge votes will appear here
+            when the voting session is connected.
+          </p>
+
         </div>
 
         <div class="judge-counts">
+
           <div class="judge-count">
-            <span>Votes pending</span>
-            <strong id="pendingCount">—</strong>
+            <span>Correct Votes</span>
+            <strong>—</strong>
           </div>
+
           <div class="judge-count">
-            <span>Session result</span>
-            <strong id="sessionResult">—</strong>
+            <span>Wrong Votes</span>
+            <strong>—</strong>
           </div>
+
         </div>
 
-        <div class="judge-placeholder">
-          <i class="fa-solid fa-users-gear"></i>
-          <strong>Judge authorization controls</strong>
-          <br>
-          The judge list, individual authorization, pending votes, and vote cancellation controls will be connected here in the next step.
-          <br><br>
-          <strong>This panel is not connected yet.</strong>
+        <div class="judge-counts">
+
+          <div class="judge-count">
+            <span>Not Spelt Votes</span>
+            <strong>—</strong>
+          </div>
+
+          <div class="judge-count">
+            <span>Majority Status</span>
+            <strong>—</strong>
+          </div>
+
         </div>
+
       </div>
+
+
+      <!-- LEADER RESPONSIBILITIES -->
 
       <div class="panel">
+
         <div class="panel-heading">
-          <h3><i class="fa-solid fa-shield-halved"></i> Leader Responsibilities</h3>
+
+          <h3>
+            <i class="fa-solid fa-shield-halved"></i>
+            Leader Responsibilities
+          </h3>
+
         </div>
-        <div style="font-size:12px;line-height:1.9;color:#475569">
-          <p><i class="fa-solid fa-check" style="color:#16a34a"></i> Control the competition flow.</p>
-          <p><i class="fa-solid fa-check" style="color:#16a34a"></i> Authorize judges before voting.</p>
-          <p><i class="fa-solid fa-check" style="color:#16a34a"></i> Review votes and resolve ties.</p>
-          <p><i class="fa-solid fa-check" style="color:#16a34a"></i> Confirm results before advancement.</p>
-          <p><i class="fa-solid fa-check" style="color:#16a34a"></i> Manage participant progression.</p>
+
+        <div class="responsibility-list">
+
+          <p>
+            <i class="fa-solid fa-check"></i>
+            Control competition progression.
+          </p>
+
+          <p>
+            <i class="fa-solid fa-check"></i>
+            Confirm participants before their turns.
+          </p>
+
+          <p>
+            <i class="fa-solid fa-check"></i>
+            Authorize judges before voting.
+          </p>
+
+          <p>
+            <i class="fa-solid fa-check"></i>
+            Monitor submitted and pending votes.
+          </p>
+
+          <p>
+            <i class="fa-solid fa-check"></i>
+            Review and confirm results.
+          </p>
+
+          <p>
+            <i class="fa-solid fa-check"></i>
+            Resolve ties and exceptional cases.
+          </p>
+
+          <p>
+            <i class="fa-solid fa-check"></i>
+            Supervise the timer without operating it.
+          </p>
+
+          <p>
+            <i class="fa-solid fa-check"></i>
+            Manage the public display.
+          </p>
+
+          <p>
+            <i class="fa-solid fa-check"></i>
+            Monitor important competition activities.
+          </p>
+
         </div>
+
       </div>
+
+
+      <!-- TIMER RESPONSIBILITY -->
+
+      <div class="panel">
+
+        <div class="panel-heading">
+
+          <h3>
+            <i class="fa-solid fa-stopwatch"></i>
+            Timekeeper Status
+          </h3>
+
+        </div>
+
+        <div class="voting-status">
+
+          <strong>Timer operator</strong>
+
+          <p>
+            The Timekeeper is responsible for starting, pausing,
+            resuming and restarting the timer. The Leader only
+            supervises timer activity and handles exceptional situations.
+          </p>
+
+        </div>
+
+      </div>
+
     </aside>
 
   </section>
 
+
   <div class="footer-note">
-    Fila Marks System · Competition leader controls the competition. Judges vote independently.
+    Fila Marks System · The Leader controls competition progression.
+    Judges vote independently. The Timekeeper operates the timer.
   </div>
 
 </main>
+
 
 <script src="js/api.js"></script>
 <script src="js/competition.js"></script>
 
 <script>
+
 /*
-  Small display helpers only.
+  DISPLAY HELPER
+
   Competition initialization remains in competition.js.
 */
 
 function toggleMusicPanel() {
+
   const panel = document.getElementById("musicPanel");
+
   if (!panel) return;
 
   panel.style.display =
     panel.style.display === "block" ? "none" : "block";
+
 }
+
 </script>
 
 </body>

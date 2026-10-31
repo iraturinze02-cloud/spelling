@@ -1,690 +1,790 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-
-<title>Teacher Control Panel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Competition Control | Fila Marks</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <style>
-
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
+:root {
+  --navy: #14233f;
+  --blue: #2563eb;
+  --blue-light: #eff6ff;
+  --green: #15803d;
+  --red: #dc2626;
+  --orange: #d97706;
+  --text: #172033;
+  --muted: #64748b;
+  --border: #e5eaf2;
+  --surface: #ffffff;
+  --background: #f4f7fb;
+  --radius: 16px;
+  --shadow: 0 5px 20px rgba(15, 23, 42, .055);
 }
 
-body{
-font-family:Arial,sans-serif;
-background:#eef2ff;
-color:#111827;
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--text);
+  font-family: Inter, Arial, sans-serif;
 }
 
-.header{
-background:linear-gradient(135deg,#1e3a8a,#2563eb);
-color:white;
-padding:18px;
-display:flex;
-justify-content:space-between;
-align-items:center;
-flex-wrap:wrap;
-gap:10px;
-box-shadow:0 2px 10px rgba(0,0,0,.2);
+button {
+  font: inherit;
+  cursor: pointer;
+  border: 0;
+  transition: .2s ease;
 }
 
-.header-left h1{
-font-size:28px;
+button:disabled {
+  cursor: not-allowed;
+  opacity: .5;
 }
 
-.header-left p{
-font-size:14px;
-opacity:.9;
-margin-top:4px;
+.topbar {
+  background: var(--navy);
+  color: white;
+  padding: 18px 4%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.header-right{
-display:flex;
-gap:10px;
-flex-wrap:wrap;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.header-btn{
-background:white;
-color:#1e3a8a;
-border:none;
-padding:10px 16px;
-border-radius:10px;
-cursor:pointer;
-font-weight:bold;
+.brand-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #2563eb;
+  display: grid;
+  place-items: center;
+  font-size: 19px;
 }
 
-.container{
-max-width:1400px;
-margin:auto;
-padding:20px;
+.brand h1 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
 }
 
-.top-grid{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-gap:15px;
-margin-bottom:20px;
+.brand p {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: #cbd5e1;
 }
 
-.card{
-background:white;
-padding:20px;
-border-radius:16px;
-box-shadow:0 4px 12px rgba(0,0,0,.08);
+.top-actions {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
 }
 
-.card-title{
-font-size:14px;
-color:#6b7280;
-margin-bottom:10px;
+.top-btn {
+  background: rgba(255,255,255,.1);
+  color: white;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 9px;
+  padding: 10px 13px;
+  font-size: 12px;
+  font-weight: 700;
 }
 
-.big-text{
-font-size:28px;
-font-weight:bold;
-color:#1e3a8a;
+.top-btn:hover { background: rgba(255,255,255,.2); }
+
+.page {
+  width: min(1440px, 94%);
+  margin: 26px auto 45px;
 }
 
-.middle-grid{
-display:grid;
-grid-template-columns:2fr 1fr;
-gap:20px;
-margin-bottom:20px;
+.page-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
 }
 
-.word-box{
-background:white;
-border-radius:18px;
-padding:30px;
-box-shadow:0 4px 12px rgba(0,0,0,.08);
-min-height:250px;
-display:flex;
-flex-direction:column;
-justify-content:center;
-align-items:center;
-text-align:center;
+.page-heading h2 {
+  margin: 0;
+  font-size: 23px;
+  font-weight: 800;
 }
 
-.word-label{
-font-size:18px;
-color:#6b7280;
-margin-bottom:20px;
+.page-heading p {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 7px 0 0;
 }
 
-.word{
-font-size:54px;
-font-weight:bold;
-color:#1e40af;
-margin-bottom:20px;
-word-break:break-word;
+.live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border-radius: 30px;
+  background: #ecfdf3;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 800;
 }
 
-.timer{
-font-size:72px;
-font-weight:bold;
-color:#dc2626;
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background: #16a34a;
+  border-radius: 50%;
 }
 
-.status-box{
-background:white;
-padding:25px;
-border-radius:18px;
-box-shadow:0 4px 12px rgba(0,0,0,.08);
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 15px;
+  margin-bottom: 20px;
 }
 
-.status-title{
-font-size:20px;
-font-weight:bold;
-margin-bottom:15px;
-color:#1e3a8a;
+.stat-card, .panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 
-.status{
-font-size:18px;
-font-weight:bold;
-padding:14px;
-border-radius:10px;
-background:#dbeafe;
-color:#1d4ed8;
-margin-bottom:20px;
-text-align:center;
+.stat-card {
+  padding: 17px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 0;
 }
 
-.vote-grid{
-display:grid;
-grid-template-columns:1fr;
-gap:12px;
+.stat-icon {
+  width: 43px;
+  height: 43px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--blue-light);
+  color: var(--blue);
+  font-size: 17px;
+  flex-shrink: 0;
 }
 
-.vote-btn{
-padding:16px;
-border:none;
-border-radius:12px;
-font-size:18px;
-font-weight:bold;
-cursor:pointer;
-color:white;
-transition:.2s;
+.stat-label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 6px;
 }
 
-.vote-btn:disabled{
-opacity:.5;
-cursor:not-allowed;
+.stat-value {
+  font-size: 16px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
-.correct{
-background:#16a34a;
+.main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(290px, .85fr);
+  gap: 18px;
+  align-items: start;
 }
 
-.wrong{
-background:#dc2626;
+.panel {
+  padding: 21px;
+  margin-bottom: 18px;
+  min-width: 0;
 }
 
-.notspelt{
-background:#f59e0b;
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 17px;
 }
 
-.controls{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-gap:15px;
+.panel-heading h3 {
+  font-size: 15px;
+  margin: 0;
+  font-weight: 800;
 }
 
-.control-btn{
-padding:16px;
-border:none;
-border-radius:14px;
-font-size:16px;
-font-weight:bold;
-cursor:pointer;
-color:white;
-transition:.2s;
+.panel-heading small {
+  color: var(--muted);
+  font-size: 11px;
 }
 
-.control-btn:hover{
-transform:translateY(-2px);
+.participant-card {
+  background: linear-gradient(135deg, #172b4d, #2456a6);
+  color: white;
+  border-radius: 15px;
+  padding: 22px;
+  margin-bottom: 16px;
 }
 
-.start{
-background:#16a34a;
+.participant-label {
+  color: #cbdaf5;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .7px;
 }
 
-.stop{
-background:#dc2626;
+.participant-name {
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 800;
+  margin: 10px 0 5px;
+  overflow-wrap: anywhere;
 }
 
-.finalize{
-background:#2563eb;
+.participant-subtitle {
+  font-size: 12px;
+  color: #dbeafe;
 }
 
-.next{
-background:#7c3aed;
+.word-box {
+  border: 1px dashed #cbd5e1;
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 22px 15px;
+  text-align: center;
+  margin-bottom: 16px;
 }
 
-.reset{
-background:#ef4444;
+.word-label {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
-.music{
-background:#db2777;
+.word-text {
+  font-size: clamp(25px, 4vw, 38px);
+  font-weight: 800;
+  color: var(--navy);
+  margin-top: 10px;
+  overflow-wrap: anywhere;
 }
 
-.secondary{
-background:#475569;
+.timer-box {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  text-align: center;
 }
 
-.music-panel{
-margin-top:20px;
-background:white;
-padding:20px;
-border-radius:18px;
-box-shadow:0 4px 12px rgba(0,0,0,.08);
-display:none;
+.timer-label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
-.music-grid{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-gap:12px;
-margin-top:15px;
+.timer {
+  font-size: clamp(38px, 6vw, 54px);
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--navy);
+  margin: 7px 0;
+  font-variant-numeric: tabular-nums;
 }
 
-.music-btn{
-padding:14px;
-border:none;
-border-radius:10px;
-background:#f3f4f6;
-cursor:pointer;
-font-weight:bold;
+.status-line {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 29px;
+  padding: 6px 12px;
+  background: #eaf1ff;
+  color: #1d4ed8;
+  border-radius: 30px;
+  font-size: 11px;
+  font-weight: 800;
 }
 
-.footer-note{
-margin-top:25px;
-text-align:center;
-color:#6b7280;
-font-size:14px;
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 10px;
+  margin-top: 15px;
 }
 
-@media(max-width:900px){
-
-.middle-grid{
-grid-template-columns:1fr;
+.info-box {
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  text-align: center;
+  background: white;
 }
 
-.word{
-font-size:38px;
+.info-box span {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-bottom: 7px;
 }
 
-.timer{
-font-size:56px;
+.info-box strong {
+  font-size: 17px;
+  font-weight: 800;
 }
 
+.control-group { margin-top: 20px; }
+
+.control-group h4 {
+  margin: 0 0 11px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: .8px;
+  text-transform: uppercase;
 }
 
+.button-grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 10px;
+}
+
+.action-btn {
+  min-height: 45px;
+  padding: 11px 13px;
+  border-radius: 10px;
+  color: white;
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.action-btn:hover { filter: brightness(.94); transform: translateY(-1px); }
+
+.btn-blue { background: var(--blue); }
+.btn-dark { background: #334155; }
+.btn-green { background: var(--green); }
+.btn-orange { background: var(--orange); }
+.btn-red { background: var(--red); }
+.btn-light {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #dbeafe;
+}
+
+.voting-status {
+  border-radius: 12px;
+  padding: 14px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+}
+
+.voting-status strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.voting-status p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.vote-progress {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 20px;
+  overflow: hidden;
+  margin-top: 14px;
+}
+
+.vote-progress span {
+  display: block;
+  width: 0%;
+  height: 100%;
+  background: var(--blue);
+}
+
+.judge-counts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.judge-count {
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+}
+
+.judge-count span {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-bottom: 6px;
+}
+
+.judge-count strong { font-size: 20px; }
+
+.judge-placeholder {
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 17px;
+  margin-top: 13px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+  text-align: center;
+}
+
+.judge-placeholder i {
+  display: block;
+  font-size: 22px;
+  color: #94a3b8;
+  margin-bottom: 9px;
+}
+
+.music-panel {
+  display: none;
+  margin-top: 14px;
+  padding: 15px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.music-panel h4 {
+  margin: 0 0 12px;
+  font-size: 12px;
+}
+
+.music-actions {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.music-actions button {
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #e2e8f0;
+  color: var(--navy);
+}
+
+.footer-note {
+  text-align: center;
+  color: var(--muted);
+  font-size: 10px;
+  padding: 12px;
+}
+
+@media(max-width: 900px) {
+  .main-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+
+@media(max-width: 520px) {
+  .page { width: 93%; margin-top: 19px; }
+  .topbar { padding: 15px 4%; }
+  .brand h1 { font-size: 14px; }
+  .top-btn { padding: 9px 10px; font-size: 10px; }
+  .stats-grid { gap: 9px; }
+  .stat-card { padding: 12px; gap: 9px; }
+  .stat-icon { width: 35px; height: 35px; font-size: 14px; }
+  .stat-value { font-size: 13px; }
+  .panel { padding: 15px; }
+  .button-grid { grid-template-columns: 1fr 1fr; }
+  .action-btn { font-size: 10px; padding: 10px 7px; }
+}
 </style>
-
 </head>
 
 <body>
 
-<div class="header">
-
-<div class="header-left">
-<h1 id="stageTitle">
-Loading Stage...
-</h1>
-
-<p id="competitionTitle">
-Competition Loading...
-</p>
-</div>
-
-<div class="header-right">
-
-<button class="header-btn"
-onclick="goLeaderboard()">
-Leaderboard
-</button>
-
-<button class="header-btn"
-onclick="goHome()">
-Home
-</button>
-
-</div>
-
-</div>
-
-<div class="container">
-
-<!-- TOP INFO -->
-<div class="top-grid">
-
-<div class="card">
-<div class="card-title">
-Participant
-</div>
-
-<div class="big-text"
-id="studentName">
-Loading...
-</div>
-</div>
-
-<div class="card">
-<div class="card-title">
-Round
-</div>
-
-<div class="big-text"
-id="roundInfo">
-1/3
-</div>
-</div>
-
-<div class="card">
-<div class="card-title">
-Round Score
-</div>
-
-<div class="big-text"
-id="roundScore">
-0
-</div>
-</div>
-
-<div class="card">
-<div class="card-title">
-Total Score
-</div>
-
-<div class="big-text"
-id="totalScore">
-0
-</div>
-</div>
-
-</div>
-
-<!-- MIDDLE -->
-<div class="middle-grid">
-
-<div class="word-box">
-
-<div class="word-label">
-Word To Spell
-</div>
-
-<div class="word"
-id="word">
-READY
-</div>
-
-<div class="timer"
-id="timer">
-0
-</div>
-
-</div>
-
-<div class="status-box">
-
-<div class="status-title">
-Competition Status
-</div>
-
-<div class="status"
-id="status">
-Waiting To Start
-</div>
-
-<div class="vote-grid">
-
-<button class="vote-btn correct"
-id="correctBtn"
-disabled
-onclick="submitVote('correct')">
-
-✔ Correct
-</button>
-
-<button class="vote-btn wrong"
-id="wrongBtn"
-disabled
-onclick="submitVote('wrong')">
-
-✖ Wrong
-</button>
-
-<button class="vote-btn notspelt"
-id="notspeltBtn"
-disabled
-onclick="submitVote('notspelt')">
-
-⏱ Not Spelt
-</button>
-
-</div>
-
-</div>
-
-</div>
-
-<!-- CONTROLS -->
-<div class="controls">
-
-<button class="control-btn start"
-onclick="startWord()">
-
-▶ START TIMER
-</button>
-
-<button class="control-btn stop"
-onclick="stopTimer()">
-
-■ STOP TIMER
-</button>
-
-<button class="control-btn finalize"
-onclick="finalizeResult()">
-
-✔ FINALIZE RESULT
-</button>
-
-<button class="control-btn next"
-onclick="nextWord()">
-
-⏭ NEXT WORD
-</button>
-
-<button class="control-btn next"
-onclick="nextParticipant()">
-
-👤 NEXT PARTICIPANT
-</button>
-
-<button class="control-btn secondary"
-onclick="toggleMusicPanel()">
-
-🎵 MUSIC PANEL
-</button>
-
-<button class="control-btn reset"
-onclick="resetParticipant()">
-
-↺ RESET PARTICIPANT
-</button>
-
-<button class="control-btn reset"
-onclick="resetCompetition()">
-
-🗑 RESET COMPETITION
-</button>
-
-</div>
-
-<!-- MUSIC -->
-<div class="music-panel"
-id="musicPanel">
-
-<h2>
-Competition Music & Sounds
-</h2>
-
-<div class="music-grid">
-
-<button class="music-btn"
-onclick="playMusic('sounds/welcome.mp3')">
-
-Welcome Music
-</button>
-
-<button class="music-btn"
-onclick="playMusic('sounds/tension.mp3')">
-
-Tension Music
-</button>
-
-<button class="music-btn"
-onclick="playMusic('sounds/background.mp3')">
-
-Background Music
-</button>
-
-<button class="music-btn"
-onclick="playMusic('sounds/victory.mp3')">
-
-Victory Music
-</button>
-
-<button class="music-btn"
-onclick="stopMusic()">
-
-Stop Music
-</button>
-
-</div>
-
-</div>
-
-<div class="footer-note">
-Teacher is also an active judge and controls the entire competition flow in realtime.
-</div>
-
-</div>
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-icon"><i class="fa-solid fa-spell-check"></i></div>
+    <div>
+      <h1>FILA MARKS</h1>
+      <p>LIVE SPELLING COMPETITION CONTROL</p>
+    </div>
+  </div>
+
+  <div class="top-actions">
+    <button class="top-btn" onclick="goLeaderboard()">
+      <i class="fa-solid fa-ranking-star"></i> Leaderboard
+    </button>
+    <button class="top-btn" onclick="goHome()">
+      <i class="fa-solid fa-house"></i> Dashboard
+    </button>
+  </div>
+</header>
+
+<main class="page">
+
+  <section class="page-heading">
+    <div>
+      <h2 id="competitionTitle">Live Competition</h2>
+      <p id="stageTitle">Competition control centre</p>
+    </div>
+    <div class="live-pill">
+      <span class="live-dot"></span>
+      LEADER CONTROL PANEL
+    </div>
+  </section>
+
+  <section class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon"><i class="fa-solid fa-user-graduate"></i></div>
+      <div>
+        <div class="stat-label">Current Participant</div>
+        <div class="stat-value" id="studentName">Loading...</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon"><i class="fa-solid fa-repeat"></i></div>
+      <div>
+        <div class="stat-label">Current Round</div>
+        <div class="stat-value" id="roundInfo">-</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
+      <div>
+        <div class="stat-label">Round Score</div>
+        <div class="stat-value" id="roundScore">0</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon"><i class="fa-solid fa-trophy"></i></div>
+      <div>
+        <div class="stat-label">Total Score</div>
+        <div class="stat-value" id="totalScore">0</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="main-grid">
+
+    <!-- LEFT: LIVE COMPETITION -->
+    <div>
+      <div class="panel">
+        <div class="panel-heading">
+          <h3><i class="fa-solid fa-display"></i> Live Competition</h3>
+          <small>Participant and word display</small>
+        </div>
+
+        <div class="participant-card">
+          <div class="participant-label">Participant on the floor</div>
+          <div class="participant-name" id="participantDisplay">Waiting for participant</div>
+          <div class="participant-subtitle">Current competition participant</div>
+        </div>
+
+        <div class="word-box">
+          <div class="word-label">Current spelling word</div>
+          <div class="word-text" id="word">Waiting...</div>
+        </div>
+
+        <div class="timer-box">
+          <div class="timer-label">Competition Timer</div>
+          <div class="timer" id="timer">00:00</div>
+          <div class="status-line" id="status">Waiting to start</div>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-box">
+            <span>Round</span>
+            <strong id="liveRound">-</strong>
+          </div>
+          <div class="info-box">
+            <span>Round Score</span>
+            <strong id="liveRoundScore">0</strong>
+          </div>
+          <div class="info-box">
+            <span>Total Score</span>
+            <strong id="liveTotalScore">0</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-heading">
+          <h3><i class="fa-solid fa-sliders"></i> Competition Controls</h3>
+          <small>Leader actions</small>
+        </div>
+
+        <div class="control-group">
+          <h4>Timer controls</h4>
+          <div class="button-grid">
+            <button class="action-btn btn-green" onclick="startWord()">
+              <i class="fa-solid fa-play"></i> Start Timer
+            </button>
+            <button class="action-btn btn-orange" onclick="stopTimer()">
+              <i class="fa-solid fa-pause"></i> Stop Timer
+            </button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h4>Word and participant controls</h4>
+          <div class="button-grid">
+            <button class="action-btn btn-blue" onclick="nextWord()">
+              <i class="fa-solid fa-forward"></i> Next Word
+            </button>
+            <button class="action-btn btn-blue" onclick="nextParticipant()">
+              <i class="fa-solid fa-user-plus"></i> Next Participant
+            </button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h4>Result control</h4>
+          <div class="button-grid">
+            <button class="action-btn btn-dark" onclick="finalizeResult()">
+              <i class="fa-solid fa-check-double"></i> Finalize Result
+            </button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <h4>Additional controls</h4>
+          <div class="button-grid">
+            <button class="action-btn btn-light" onclick="toggleMusicPanel()">
+              <i class="fa-solid fa-music"></i> Music Panel
+            </button>
+            <button class="action-btn btn-orange" onclick="resetParticipant()">
+              <i class="fa-solid fa-rotate-left"></i> Reset Participant
+            </button>
+            <button class="action-btn btn-red" onclick="resetCompetition()">
+              <i class="fa-solid fa-triangle-exclamation"></i> Reset Competition
+            </button>
+          </div>
+
+          <div class="music-panel" id="musicPanel">
+            <h4>Competition Music</h4>
+            <div class="music-actions">
+              <button onclick="playMusic()"><i class="fa-solid fa-play"></i> Play</button>
+              <button onclick="stopMusic()"><i class="fa-solid fa-stop"></i> Stop</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: JUDGE SESSION -->
+    <aside>
+      <div class="panel">
+        <div class="panel-heading">
+          <h3><i class="fa-solid fa-gavel"></i> Judge Voting Session</h3>
+        </div>
+
+        <div class="voting-status">
+          <strong>Voting session status</strong>
+          <p id="votingStatus">
+            No voting session information is connected to this panel yet.
+            The leader must open a session and authorize judges before they can vote.
+          </p>
+          <div class="vote-progress">
+            <span id="voteProgressBar"></span>
+          </div>
+        </div>
+
+        <div class="judge-counts">
+          <div class="judge-count">
+            <span>Judges authorized</span>
+            <strong id="authorizedCount">—</strong>
+          </div>
+          <div class="judge-count">
+            <span>Votes received</span>
+            <strong id="votesReceivedCount">—</strong>
+          </div>
+        </div>
+
+        <div class="judge-counts">
+          <div class="judge-count">
+            <span>Votes pending</span>
+            <strong id="pendingCount">—</strong>
+          </div>
+          <div class="judge-count">
+            <span>Session result</span>
+            <strong id="sessionResult">—</strong>
+          </div>
+        </div>
+
+        <div class="judge-placeholder">
+          <i class="fa-solid fa-users-gear"></i>
+          <strong>Judge authorization controls</strong>
+          <br>
+          The judge list, individual authorization, pending votes, and vote cancellation controls will be connected here in the next step.
+          <br><br>
+          <strong>This panel is not connected yet.</strong>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-heading">
+          <h3><i class="fa-solid fa-shield-halved"></i> Leader Responsibilities</h3>
+        </div>
+        <div style="font-size:12px;line-height:1.9;color:#475569">
+          <p><i class="fa-solid fa-check" style="color:#16a34a"></i> Control the competition flow.</p>
+          <p><i class="fa-solid fa-check" style="color:#16a34a"></i> Authorize judges before voting.</p>
+          <p><i class="fa-solid fa-check" style="color:#16a34a"></i> Review votes and resolve ties.</p>
+          <p><i class="fa-solid fa-check" style="color:#16a34a"></i> Confirm results before advancement.</p>
+          <p><i class="fa-solid fa-check" style="color:#16a34a"></i> Manage participant progression.</p>
+        </div>
+      </div>
+    </aside>
+
+  </section>
+
+  <div class="footer-note">
+    Fila Marks System · Competition leader controls the competition. Judges vote independently.
+  </div>
+
+</main>
 
 <script src="js/api.js"></script>
 <script src="js/competition.js"></script>
 
 <script>
+/*
+  Small display helpers only.
+  Competition initialization remains in competition.js.
+*/
 
-let competition = null;
-let stage = null;
+function toggleMusicPanel() {
+  const panel = document.getElementById("musicPanel");
+  if (!panel) return;
 
-let students = [];
-let words = [];
-
-let currentStudentIndex = 0;
-let currentWordIndex = 0;
-let currentRound = 1;
-
-let roundScore = 0;
-let totalScores = {};
-
-let timer = null;
-let timeLeft = 0;
-let usedTime = 0;
-let started = false;
-
-let music = new Audio();
-
-/* =========================
-LOAD SYSTEM
-========================= */
-
-window.onload = async()=>{
-
-await loadCompetition();
-await loadStage();
-await loadStudents(); 
-};
-
-/* =========================
-LOAD COMPETITION
-========================= */
-
-async function loadCompetition(){
-
-const res = await api({
-action:"getActiveCompetition"
-});
-
-competition = res.competition;
-
-document.getElementById("competitionTitle")
-.innerText = competition.competition_name;
-
+  panel.style.display =
+    panel.style.display === "block" ? "none" : "block";
 }
-
-/* =========================
-LOAD ACTIVE STAGE
-========================= */
-
-async function loadStage(){
-
-const res = await api({
-action:"getActiveStage",
-competition_id:competition.id
-});
-
-stage = res.stage;
-
-document.getElementById("stageTitle")
-.innerText =
-`Stage ${stage.stage_number} • ${stage.stage_name}`;
-
-}
-
-async function loadStudents() {
-
-  const res = await api({
-    action: "getStudents",
-    competition_id: competition.id,
-    stage_number: stage.stage_number
-  });
-
-  students = res.students || [];
-
-  showStudent();
-  showWord();
-  }
-
-/* =========================
-SHOW STUDENT
-========================= */
-
-function showStudent(){
-
-const student = students[currentStudentIndex];
-
-if(!student)return;
-
-document.getElementById("studentName")
-.innerText = student.full_name;
-
-document.getElementById("roundInfo")
-.innerText =
-`${currentRound}/${stage.total_rounds}`;
-
-document.getElementById("roundScore")
-.innerText = roundScore;
-
-document.getElementById("totalScore")
-.innerText =
-totalScores[student.id] || 0;
-
-}
-
-
-
-
-
-/* =========================
-STATUS
-========================= */
-
-function updateStatus(text){
-
-document.getElementById("status")
-.innerText = text;
-
-}
-
-
-/* =========================
-NAVIGATION
-========================= */
-
-function goHome(){
-
-window.location = "teacher-home.html";
-
-}
-
-function goLeaderboard(){
-
-window.location = "leaderboard.html";
-
-}
-
 </script>
 
 </body>
-  </html>
+</html>

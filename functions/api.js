@@ -1,3 +1,5 @@
+import { verifySessionToken } from "./_shared/auth.js";
+
 import { neon } from "@neondatabase/serverless";
 
 /**
@@ -51,22 +53,40 @@ console.log("ACTION:", action);
     // =====================================================
     // LOGIN (YOU HAD SEPARATE FILE BEFORE)
     // =====================================================
-    if (action === "login") {
+  // Login is handled only by /spellingLogin.
+if (action === "login") {
+  return Response.json(
+    {
+      success: false,
+      error: "Please sign in through the login page."
+    },
+    { status: 400 }
+  );
+}
 
-      const users = await sql`
-        SELECT *
-        FROM users
-        WHERE username=${body.username}
-        AND password=${body.password}
-        LIMIT 1
-      `;
+// Every /api action requires a valid signed session.
+const authorization =
+  context.request.headers.get("Authorization") || "";
 
-      return Response.json({
-        success: users.length > 0,
-        user: users[0] || null
-      });
-    }
+const bearer = authorization.startsWith("Bearer ")
+  ? authorization.slice(7)
+  : "";
 
+const session = await verifySessionToken(
+  bearer,
+  context.env.AUTH_SECRET
+);
+
+if (!session) {
+  return Response.json(
+    {
+      success: false,
+      error: "Your session is missing or has expired. Please sign in again.",
+      code: "UNAUTHORIZED"
+    },
+    { status: 401 }
+  );
+}
     // =====================================================
     // CREATE STAGE
     // =====================================================

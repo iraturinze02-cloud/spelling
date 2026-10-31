@@ -140,6 +140,137 @@ if (!session) {
     error: "Unknown account role."
   }, { status: 403 });
 }
+
+    
+// ================================================
+// GET CURRENT VOTING SESSION
+// ================================================
+
+if (action === "getVotingSession") {
+  const competitionId = Number(body.competition_id);
+
+  const sessions = await sql`
+    SELECT *
+    FROM competition_vote_sessions
+    WHERE competition_id = ${competitionId}
+      AND status = 'open'
+    ORDER BY id DESC
+    LIMIT 1
+  `;
+
+  if (!sessions.length) {
+    return Response.json({
+      success: true,
+      voting_open: false,
+      session: null
+    });
+  }
+
+  const votingSession = sessions[0];
+
+  const judges = await sql`
+    SELECT
+      judge_id,
+      authorized,
+      voted
+    FROM competition_vote_session_judges
+    WHERE session_id = ${votingSession.id}
+    ORDER BY judge_id
+  `;
+
+  return Response.json({
+    success: true,
+    voting_open: true,
+    session: votingSession,
+    judges
+  });
+}
+
+
+// ================================================
+// AUTHORIZE A JUDGE TO VOTE
+// ================================================
+
+if (action === "authorizeJudge") {
+
+  if (session.role !== "teacher") {
+    return Response.json({
+      success: false,
+      error: "Only the competition leader can authorize judges."
+    }, { status: 403 });
+  }
+
+  const sessionId = Number(body.session_id);
+  const judgeId = Number(body.judge_id);
+
+  if (!sessionId || !judgeId) {
+    return Response.json({
+      success: false,
+      error: "Session ID and judge ID are required."
+    }, { status: 400 });
+  }
+
+  const votingSessions = await sql`
+    SELECT id, competition_id
+    FROM competition_vote_sessions
+    WHERE id = ${sessionId}
+      AND status = 'open'
+    LIMIT 1
+  `;
+
+  if (!votingSessions.length) {
+    return Response.json({
+      success: false,
+      error: "Voting session not found or already closed."
+    }, { status: 404 });
+  }
+
+  const assignment = await sql`
+    SELECT cj.judge_id
+    FROM competition_judges cj
+    JOIN users u ON u.id = cj.judge_id
+    WHERE cj.competition_id = ${votingSessions[0].competition_id}
+      AND cj.judge_id = ${judgeId}
+      AND u.role = 'judge'
+    LIMIT 1
+  `;
+
+  if (!assignment.length) {
+    return Response.json({
+      success: false,
+      error: "This judge is not assigned to the competition."
+    }, { status: 403 });
+  }
+
+  const updated = await sql`
+    UPDATE competition_vote_session_judges
+    SET
+      authorized = TRUE,
+      authorized_at = NOW()
+    WHERE session_id = ${sessionId}
+      AND judge_id = ${judgeId}
+    RETURNING id
+  `;
+
+  if (!updated.length) {
+    return Response.json({
+      success: false,
+      error: "This judge is not included in the voting session."
+    }, { status: 404 });
+  }
+
+  await broadcastCompetition(
+    context,
+    votingSessions[0].competition_id,
+    { action: "judgeAuthorized", judge_id: judgeId }
+  );
+
+  return Response.json({
+    success: true,
+    message: "Judge authorized successfully."
+  });
+}
+
     // =====================================================
     // CREATE STAGE
     // =====================================================
@@ -1953,93 +2084,140 @@ if (action === "ensureStageReady") {
 // SAVE JUDGE VOTE
 // =====================================================
 
-// ================================================
-// SAVE JUDGE VOTE
-// ================================================
 
 if (action === "saveJudgeVote") {
 
-  // Only authenticated judges may vote.
-  if (!session || session.role !== "judge") {
+  if (session.role !== "judge") {
     return Response.json({
       success: false,
-      error: "Only authorized judge accounts can vote."
+      error: "Only judges can submit votes."
     }, { status: 403 });
   }
 
   const judgeId = Number(session.sub);
+  const competitionId = Number(body.competition_id);
 
-  const allowedVotes = [
-    "correct",
-    "wrong",
-    "notspelt"
-  ];
+  const votingSessions = await sql`
+    SELECT *
+    FROM competition_vote_sessions
+    WHERE competition_id = ${competitionId}
+      AND stage_number = ${Number(body.stage_number)}
+      AND round_number = ${Number(body.round_number)}
+      AND student_id = ${Number(body.student_id)}
+      AND word = ${body.word}
+      AND status = 'open'
+    ORDER BY id DESC
+    LIMIT 1
+  `;
 
-  if (
-    !Number.isInteger(judgeId) ||
-    judgeId <= 0 ||
-    !body.competition_id ||
-    !body.stage_number ||
-    !body.round_number ||
-    !body.student_id ||
-    !body.word ||
-    !allowedVotes.includes(body.vote)
-  ) {
+  if (!votingSessions.length) {
     return Response.json({
       success: false,
-      error: "Invalid vote information."
+      error: "There is no open voting session for this word."
+    }, { status: 403 });
+  }
+
+  const votingSession = votingSessions[0];
+
+  const judgeRows = await sql`
+    SELECT *
+    FROM competition_vote_session_judges
+    WHERE session_id = ${votingSession.id}
+      AND judge_id = ${judgeId}
+      AND authorized = TRUE
+      AND voted = FALSE
+    LIMIT 1
+  `;
+
+  if (!judgeRows.length) {
+    return Response.json({
+      success: false,
+      error: "You have not been authorized to vote, or you have already voted."
+    }, { status: 403 });
+  }
+
+  const allowedVotes = ["correct", "wrong", "notspelt"];
+
+  if (!allowedVotes.includes(body.vote)) {
+    return Response.json({
+      success: false,
+      error: "Invalid vote."
     }, { status: 400 });
   }
 
-  // Never trust judge_id supplied by the browser.
-  // The signed session determines the judge.
-  await sql`
-    DELETE FROM judge_votes
-    WHERE competition_id = ${body.competition_id}
-      AND stage_number = ${body.stage_number}
-      AND round_number = ${body.round_number}
-      AND student_id = ${body.student_id}
-      AND word = ${body.word}
+  // Claim this judge's vote exactly once.
+  const claimed = await sql`
+    UPDATE competition_vote_session_judges
+    SET voted = TRUE
+    WHERE session_id = ${votingSession.id}
       AND judge_id = ${judgeId}
+      AND authorized = TRUE
+      AND voted = FALSE
+    RETURNING id
   `;
 
-  await sql`
-    INSERT INTO judge_votes (
-      competition_id,
-      stage_number,
-      student_id,
-      round_number,
-      word,
-      judge_id,
-      vote
-    )
-    VALUES (
-      ${body.competition_id},
-      ${body.stage_number},
-      ${body.student_id},
-      ${body.round_number},
-      ${body.word},
-      ${judgeId},
-      ${body.vote}
-    )
+  if (!claimed.length) {
+    return Response.json({
+      success: false,
+      error: "Your vote has already been submitted."
+    }, { status: 409 });
+  }
+
+  try {
+    await sql`
+      INSERT INTO judge_votes (
+        competition_id,
+        stage_number,
+        student_id,
+        round_number,
+        word,
+        judge_id,
+        vote
+      )
+      VALUES (
+        ${competitionId},
+        ${votingSession.stage_number},
+        ${votingSession.student_id},
+        ${votingSession.round_number},
+        ${votingSession.word},
+        ${judgeId},
+        ${body.vote}
+      )
+    `;
+  } catch (error) {
+    await sql`
+      UPDATE competition_vote_session_judges
+      SET voted = FALSE
+      WHERE session_id = ${votingSession.id}
+        AND judge_id = ${judgeId}
+    `;
+    throw error;
+  }
+
+  const totals = await sql`
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE voted = FALSE)::int AS pending
+    FROM competition_vote_session_judges
+    WHERE session_id = ${votingSession.id}
+      AND authorized = TRUE
   `;
 
-  await broadcastCompetition(
-    context,
-    body.competition_id,
-    {
-      action: "saveJudgeVote",
-      student_id: body.student_id,
-      round_number: body.round_number,
-      word: body.word
-    }
-  );
+  await broadcastCompetition(context, competitionId, {
+    action: "saveJudgeVote",
+    session_id: votingSession.id,
+    judge_id: judgeId
+  });
 
   return Response.json({
     success: true,
-    message: "Vote submitted successfully."
+    message: "Vote submitted successfully.",
+    total_authorized: totals[0].total,
+    pending_votes: totals[0].pending,
+    all_voted: totals[0].pending === 0
   });
 }
+
 // =====================================================
 // GET WORD VOTES
 // =====================================================
@@ -2105,54 +2283,261 @@ success:true
 // OPEN VOTING
 // =====================================================
 
-if(action==="openVoting"){
 
-await sql`
+if (action === "openVoting") {
 
-UPDATE competition_state
+  if (session.role !== "teacher") {
+    return Response.json({
+      success: false,
+      error: "Only the competition leader can open voting."
+    }, { status: 403 });
+  }
 
-SET
+  const competitionId = Number(body.competition_id);
 
-voting_open=true,
-competition_status='Waiting For Judges Votes'
+  if (!competitionId) {
+    return Response.json({
+      success: false,
+      error: "Competition ID is required."
+    }, { status: 400 });
+  }
 
-WHERE competition_id=${body.competition_id}
+  const stateRows = await sql`
+    SELECT *
+    FROM competition_state
+    WHERE competition_id = ${competitionId}
+    LIMIT 1
+  `;
 
-`;
+  if (!stateRows.length) {
+    return Response.json({
+      success: false,
+      error: "Competition state not found."
+    }, { status: 404 });
+  }
 
-await broadcastCompetition(context, body.competition_id, { action: "openVoting" });
+  const state = stateRows[0];
 
-return Response.json({
-success:true
-});
+  const stageRows = await sql`
+    SELECT *
+    FROM competition_stages
+    WHERE competition_id = ${competitionId}
+      AND status = 'active'
+    LIMIT 1
+  `;
 
+  if (!stageRows.length) {
+    return Response.json({
+      success: false,
+      error: "There is no active stage."
+    }, { status: 400 });
+  }
+
+  const stage = stageRows[0];
+
+  const students = await sql`
+    SELECT s.id, s.full_name, d.group_id
+    FROM students s
+    JOIN student_draws d
+      ON d.student_id = s.id
+    WHERE d.competition_id = ${competitionId}
+      AND d.stage_number = ${stage.stage_number}
+    ORDER BY d.draw_order ASC
+  `;
+
+  const student = students[state.current_student_index];
+
+  if (!student) {
+    return Response.json({
+      success: false,
+      error: "No active participant was found."
+    }, { status: 400 });
+  }
+
+  const words = await sql`
+    SELECT word
+    FROM words
+    WHERE group_id = ${student.group_id}
+    ORDER BY id ASC
+  `;
+
+  const word = words[state.current_word_index]?.word;
+
+  if (!word) {
+    return Response.json({
+      success: false,
+      error: "No active word was found."
+    }, { status: 400 });
+  }
+
+  const assignedJudges = await sql`
+    SELECT cj.judge_id
+    FROM competition_judges cj
+    JOIN users u ON u.id = cj.judge_id
+    WHERE cj.competition_id = ${competitionId}
+      AND u.role = 'judge'
+  `;
+
+  if (!assignedJudges.length) {
+    return Response.json({
+      success: false,
+      error: "Assign at least one judge before opening voting."
+    }, { status: 400 });
+  }
+
+  const existing = await sql`
+    SELECT id
+    FROM competition_vote_sessions
+    WHERE competition_id = ${competitionId}
+      AND status = 'open'
+    LIMIT 1
+  `;
+
+  if (existing.length) {
+    return Response.json({
+      success: false,
+      error: "A voting session is already open."
+    }, { status: 409 });
+  }
+
+  const inserted = await sql`
+    INSERT INTO competition_vote_sessions (
+      competition_id,
+      stage_number,
+      round_number,
+      student_id,
+      word,
+      status,
+      opened_by
+    )
+    VALUES (
+      ${competitionId},
+      ${stage.stage_number},
+      ${state.current_round},
+      ${student.id},
+      ${word},
+      'open',
+      ${Number(session.sub)}
+    )
+    RETURNING id
+  `;
+
+  const sessionId = inserted[0].id;
+
+  for (const judge of assignedJudges) {
+    await sql`
+      INSERT INTO competition_vote_session_judges (
+        session_id,
+        judge_id,
+        authorized,
+        voted
+      )
+      VALUES (
+        ${sessionId},
+        ${judge.judge_id},
+        FALSE,
+        FALSE
+      )
+      ON CONFLICT (session_id, judge_id) DO NOTHING
+    `;
+  }
+
+  await sql`
+    UPDATE competition_state
+    SET
+      voting_open = TRUE,
+      competition_status = 'Waiting For Judges Votes'
+    WHERE competition_id = ${competitionId}
+  `;
+
+  await broadcastCompetition(context, competitionId, {
+    action: "openVoting",
+    session_id: sessionId
+  });
+
+  return Response.json({
+    success: true,
+    session_id: sessionId,
+    student_id: student.id,
+    word
+  });
 }
 
 // =====================================================
 // CLOSE VOTING
 // =====================================================
 
-if(action==="closeVoting"){
 
-await sql`
+if (action === "closeVoting") {
 
-UPDATE competition_state
+  if (session.role !== "teacher") {
+    return Response.json({
+      success: false,
+      error: "Only the competition leader can close voting."
+    }, { status: 403 });
+  }
 
-SET
+  const competitionId = Number(body.competition_id);
 
-voting_open=false,
-finalized=true
+  const sessions = await sql`
+    SELECT *
+    FROM competition_vote_sessions
+    WHERE competition_id = ${competitionId}
+      AND status = 'open'
+    ORDER BY id DESC
+    LIMIT 1
+  `;
 
-WHERE competition_id=${body.competition_id}
+  if (!sessions.length) {
+    return Response.json({
+      success: false,
+      error: "There is no open voting session."
+    }, { status: 404 });
+  }
 
-`;
+  const votingSession = sessions[0];
 
-await broadcastCompetition(context, body.competition_id, { action: "closeVoting" });
+  const pending = await sql`
+    SELECT COUNT(*)::int AS total
+    FROM competition_vote_session_judges
+    WHERE session_id = ${votingSession.id}
+      AND authorized = TRUE
+      AND voted = FALSE
+  `;
 
-return Response.json({
-success:true
-});
+  if (pending[0].total > 0) {
+    return Response.json({
+      success: false,
+      error: "Some authorized judges have not voted yet.",
+      pending_votes: pending[0].total
+    }, { status: 409 });
+  }
 
+  await sql`
+    UPDATE competition_vote_sessions
+    SET
+      status = 'closed',
+      closed_at = NOW()
+    WHERE id = ${votingSession.id}
+  `;
+
+  await sql`
+    UPDATE competition_state
+    SET
+      voting_open = FALSE,
+      competition_status = 'Voting Completed'
+    WHERE competition_id = ${competitionId}
+  `;
+
+  await broadcastCompetition(context, competitionId, {
+    action: "closeVoting",
+    session_id: votingSession.id
+  });
+
+  return Response.json({
+    success: true,
+    message: "Voting closed successfully."
+  });
 }
 
 // =====================================================

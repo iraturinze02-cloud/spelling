@@ -110,94 +110,122 @@
             <p id="message" role="alert"></p>
         </form>
     </div>
+<script>
+    const form = document.getElementById("loginForm");
+    const loginButton = document.getElementById("loginButton");
+    const message = document.getElementById("message");
 
-    <script>
-        const form = document.getElementById("loginForm");
-        const loginButton = document.getElementById("loginButton");
-        const message = document.getElementById("message");
+    form.addEventListener("submit", login);
 
-        form.addEventListener("submit", login);
+    async function login(event) {
+        event.preventDefault();
 
-        async function login(event) {
-            event.preventDefault();
+        const username = document
+            .getElementById("username")
+            .value.trim();
 
-            const username = document
-                .getElementById("username")
-                .value.trim();
+        const password = document
+            .getElementById("password")
+            .value;
 
-            const password = document
-                .getElementById("password")
-                .value;
+        message.textContent = "";
 
-            message.textContent = "";
+        if (!username || !password) {
+            message.textContent =
+                "Please enter your username and password.";
+            return;
+        }
 
-            if (!username || !password) {
+        loginButton.disabled = true;
+        loginButton.textContent = "LOGGING IN...";
+
+        try {
+            const response = await fetch("/spellingLogin", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    username,
+                    password
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
                 message.textContent =
-                    "Please enter your username and password.";
+                    data.error || "Invalid username or password.";
                 return;
             }
 
-            loginButton.disabled = true;
-            loginButton.textContent = "LOGGING IN...";
-
-            try {
-                const response = await fetch("/spellingLogin", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        username,
-                        password
-                    })
-                });
-
-                const data = await response.json();
-
-                if (!response.ok || !data.success) {
-                    message.textContent =
-                        data.error || "Invalid username or password.";
-                    return;
-                }
-
-                if (!data.user || !data.user.role) {
-                    message.textContent =
-                        "The server returned an invalid user account.";
-                    return;
-                }
-
-                if (
-                    data.user.role !== "teacher" &&
-                    data.user.role !== "judge"
-                ) {
-                    message.textContent =
-                        "This account does not have access to this system.";
-                    return;
-                }
-
-                localStorage.setItem(
-                    "user",
-                    JSON.stringify(data.user)
-                );
-
-                if (data.user.role === "teacher") {
-                    window.location.href =
-                        "/spelling/teacher-home.html";
-                } else {
-                    window.location.href =
-                        "/spelling/judge-home.html";
-                }
-
-            } catch (error) {
-                console.error("Login error:", error);
-
+            if (!data.user || !data.user.role) {
                 message.textContent =
-                    "Unable to connect to the server. Please try again.";
-            } finally {
-                loginButton.disabled = false;
-                loginButton.textContent = "LOGIN";
+                    "The server returned an invalid user account.";
+                return;
             }
+
+            if (!data.token) {
+                message.textContent =
+                    "The server did not issue a secure session.";
+                return;
+            }
+
+            if (
+                data.user.role !== "teacher" &&
+                data.user.role !== "judge" &&
+                data.user.role !== "timekeeper"
+            ) {
+                message.textContent =
+                    "This account does not have access to this system.";
+                return;
+            }
+
+            // Save authenticated session
+            localStorage.setItem(
+                "user",
+                JSON.stringify(data.user)
+            );
+
+            localStorage.setItem(
+                "auth_token",
+                data.token
+            );
+
+            // Redirect according to account role
+            if (data.user.role === "teacher") {
+
+                window.location.href =
+                    "/spelling/teacher-home.html";
+
+            } else if (data.user.role === "judge") {
+
+                window.location.href =
+                    "/spelling/judge-home.html";
+
+            } else {
+
+                // Timekeeper dashboard will be added later.
+                message.textContent =
+                    "Timekeeper dashboard is not yet available.";
+
+                localStorage.removeItem("user");
+                localStorage.removeItem("auth_token");
+            }
+
+        } catch (error) {
+            console.error("Login error:", error);
+
+            message.textContent =
+                "Unable to connect to the server. Please try again.";
+
+        } finally {
+            loginButton.disabled = false;
+            loginButton.textContent = "LOGIN";
         }
-    </script>
+    }
+</script>
+
+   
 </body>
 </html>

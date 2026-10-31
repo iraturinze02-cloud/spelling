@@ -1,47 +1,64 @@
-
 // =====================================
 // GLOBAL API HELPER
 // Cloudflare Pages Function API
+// Sends the signed session created by /spellingLogin.
 // =====================================
 
-async function api(data){
+async function api(data) {
+  try {
+    const token = localStorage.getItem("auth_token");
 
-try{
+    const headers = {
+      "Content-Type": "application/json"
+    };
 
-const response = await fetch("/api",{
-method:"POST",
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
 
-headers:{
-"Content-Type":"application/json"
-},
+    const response = await fetch("/api", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(data)
+    });
 
-body:JSON.stringify(data)
+    const result = await response.json();
 
-});
+    if (response.status === 401) {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("user");
 
-const result = await response.json();
+      if (
+        !location.pathname.endsWith("/index.html") &&
+        location.pathname !== "/"
+      ) {
+        location.href = "/index.html";
+      }
 
-if(!response.ok){
+      return null;
+    }
 
-console.log("API ERROR:",result);
+    if (!response.ok) {
+      console.error("API ERROR:", result);
 
-alert(result.error || result.message || "Request failed");
+      alert(
+        result.error ||
+        result.message ||
+        "Request failed"
+      );
 
-return null;
+      return null;
+    }
 
-}
+    return result;
 
-return result;
+  } catch (error) {
+    console.error("NETWORK ERROR:", error);
 
-}
-catch(error){
+    alert(
+      "Network error. Please check your connection."
+    );
 
-console.log("NETWORK ERROR:",error);
-
-alert("Network error");
-
-return null;
-
-}
-
+    return null;
+  }
 }

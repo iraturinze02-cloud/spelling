@@ -475,18 +475,43 @@ Judge votes are realtime and synchronized with the teacher control panel.
 // API HELPER
 // ========================================
 
-async function api(data){
+async function api(data) {
 
-const res = await fetch("/api",{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify(data)
-});
+  const token = localStorage.getItem("auth_token");
 
-return await res.json();
+  try {
+    const res = await fetch("/api", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? {
+          Authorization: `Bearer ${token}`
+        } : {})
+      },
+      body: JSON.stringify(data)
+    });
 
+    const result = await res.json();
+
+    if (res.status === 401) {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("user");
+
+      window.location.href = "/index.html";
+      return null;
+    }
+
+    if (!res.ok) {
+      console.error("API ERROR:", result);
+      return result;
+    }
+
+    return result;
+
+  } catch (error) {
+    console.error("API ERROR:", error);
+    return null;
+  }
 }
 
 // ========================================

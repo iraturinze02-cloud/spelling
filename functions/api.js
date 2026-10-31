@@ -64,7 +64,10 @@ if (action === "login") {
   );
 }
 
-// Every /api action requires a valid signed session.
+// ================================================
+// SESSION AUTHENTICATION AND ROLE AUTHORIZATION
+// ================================================
+
 const authorization =
   context.request.headers.get("Authorization") || "";
 
@@ -77,15 +80,65 @@ const session = await verifySessionToken(
   context.env.AUTH_SECRET
 );
 
+// Public display pages may only read public competition data.
+const publicActions = [
+  "getActiveCompetition",
+  "getCompetitionRealtime"
+];
+
+// Judge accounts may only read competition information
+// and submit their own votes.
+const judgeActions = [
+  "getActiveCompetition",
+  "getActiveStage",
+  "getCompetitionRealtime",
+  "getLiveStudents",
+  "saveJudgeVote"
+];
+
 if (!session) {
-  return Response.json(
-    {
+  if (!publicActions.includes(action)) {
+    return Response.json({
       success: false,
-      error: "Your session is missing or has expired. Please sign in again.",
+      error: "Please sign in to perform this action.",
       code: "UNAUTHORIZED"
-    },
-    { status: 401 }
-  );
+    }, { status: 401 });
+  }
+} else if (session.role === "teacher") {
+
+  // Teacher is the competition leader.
+  // The leader must not vote as a judge.
+  if (action === "saveJudgeVote") {
+    return Response.json({
+      success: false,
+      error: "The competition leader cannot submit judge votes."
+    }, { status: 403 });
+  }
+
+} else if (session.role === "judge") {
+
+  if (!judgeActions.includes(action)) {
+    return Response.json({
+      success: false,
+      error: "Judges are not permitted to perform this action.",
+      code: "FORBIDDEN"
+    }, { status: 403 });
+  }
+
+} else if (session.role === "timekeeper") {
+
+  return Response.json({
+    success: false,
+    error: "Timekeeper permissions are not enabled yet.",
+    code: "FORBIDDEN"
+  }, { status: 403 });
+
+} else {
+
+  return Response.json({
+    success: false,
+    error: "Unknown account role."
+  }, { status: 403 });
 }
     // =====================================================
     // CREATE STAGE
@@ -1900,69 +1953,93 @@ if (action === "ensureStageReady") {
 // SAVE JUDGE VOTE
 // =====================================================
 
-if(action==="saveJudgeVote"){
+// ================================================
+// SAVE JUDGE VOTE
+// ================================================
 
-// REMOVE OLD VOTE FROM SAME JUDGE
-await sql`
+if (action === "saveJudgeVote") {
 
-DELETE FROM judge_votes
+  // Only authenticated judges may vote.
+  if (!session || session.role !== "judge") {
+    return Response.json({
+      success: false,
+      error: "Only authorized judge accounts can vote."
+    }, { status: 403 });
+  }
 
-WHERE competition_id=${body.competition_id}
+  const judgeId = Number(session.sub);
 
-AND stage_number=${body.stage_number}
+  const allowedVotes = [
+    "correct",
+    "wrong",
+    "notspelt"
+  ];
 
-AND round_number=${body.round_number}
+  if (
+    !Number.isInteger(judgeId) ||
+    judgeId <= 0 ||
+    !body.competition_id ||
+    !body.stage_number ||
+    !body.round_number ||
+    !body.student_id ||
+    !body.word ||
+    !allowedVotes.includes(body.vote)
+  ) {
+    return Response.json({
+      success: false,
+      error: "Invalid vote information."
+    }, { status: 400 });
+  }
 
-AND student_id=${body.student_id}
+  // Never trust judge_id supplied by the browser.
+  // The signed session determines the judge.
+  await sql`
+    DELETE FROM judge_votes
+    WHERE competition_id = ${body.competition_id}
+      AND stage_number = ${body.stage_number}
+      AND round_number = ${body.round_number}
+      AND student_id = ${body.student_id}
+      AND word = ${body.word}
+      AND judge_id = ${judgeId}
+  `;
 
-AND word=${body.word}
+  await sql`
+    INSERT INTO judge_votes (
+      competition_id,
+      stage_number,
+      student_id,
+      round_number,
+      word,
+      judge_id,
+      vote
+    )
+    VALUES (
+      ${body.competition_id},
+      ${body.stage_number},
+      ${body.student_id},
+      ${body.round_number},
+      ${body.word},
+      ${judgeId},
+      ${body.vote}
+    )
+  `;
 
-AND judge_id=${body.judge_id}
-
-`;
-
-// INSERT NEW VOTE
-await sql`
-
-INSERT INTO judge_votes(
-
-competition_id,
-stage_number,
-student_id,
-round_number,
-word,
-judge_id,
-vote
-
-)
-
-VALUES(
-
-${body.competition_id},
-${body.stage_number},
-${body.student_id},
-${body.round_number},
-${body.word},
-${body.judge_id},
-${body.vote}
-
-)
-
-`;
-
-await broadcastCompetition(context, body.competition_id, {
-  action: "saveJudgeVote",
-  student_id: body.student_id,
-  round_number: body.round_number,
-  word: body.word
-});
-
-return Response.json({
-success:true
-});
-
+  await broadcastCompetition(
+    context,
+    body.competition_id,
+    {
+      action: "saveJudgeVote",
+      student_id: body.student_id,
+      round_number: body.round_number,
+      word: body.word
     }
+  );
 
+  return Response.json({
+    success: true,
+    message: "Vote submitted successfully."
+  });
+}
 // =====================================================
 // GET WORD VOTES
 // =====================================================

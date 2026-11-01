@@ -470,6 +470,35 @@ button:disabled {
   font-size: 20px;
 }
 
+
+.judge-session-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: grid;
+  gap: 8px;
+}
+.judge-session-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 9px 11px;
+  border-radius: 8px;
+  background: rgba(0,0,0,.035);
+  font-size: 13px;
+}
+.judge-session-list li strong {
+  text-align: right;
+  font-size: 12px;
+}
+.session-summary {
+  display: grid;
+  gap: 5px;
+  margin-top: 10px;
+  font-size: 13px;
+}
+
 .judge-placeholder {
   border: 1px dashed #cbd5e1;
   border-radius: 12px;
@@ -653,7 +682,7 @@ button:disabled {
 
   <div class="top-actions">
 
-    <button class="top-btn" onclick="goLeaderboard()">
+    <button class="top-btn" onclick="goLeaderboard()" title="Available after competition closure and leaderboard visibility controls are implemented">
       <i class="fa-solid fa-ranking-star"></i>
       Leaderboard
     </button>
@@ -886,7 +915,7 @@ button:disabled {
               Next Participant
             </button>
 
-            <button class="action-btn btn-orange" onclick="resetParticipant()">
+            <button class="action-btn btn-orange" disabled title="Temporarily disabled to protect records until audited restart is implemented" onclick="resetParticipant()">
               <i class="fa-solid fa-rotate-left"></i>
               Restart Participant
             </button>
@@ -948,7 +977,7 @@ button:disabled {
 
           <div class="button-grid">
 
-            <button class="action-btn btn-blue" onclick="finalizeResult()">
+            <button class="action-btn btn-blue" disabled title="Waiting for secure voting closure, majority calculation, tie handling and Leader confirmation" onclick="finalizeResult()">
               <i class="fa-solid fa-check-double"></i>
               Review / Confirm Result
             </button>
@@ -1064,7 +1093,7 @@ button:disabled {
               Emergency Override
             </button>
 
-            <button class="action-btn btn-red" onclick="resetCompetition()">
+            <button class="action-btn btn-red" disabled title="Disabled to protect competition history" onclick="resetCompetition()">
               <i class="fa-solid fa-rotate"></i>
               Reset Competition
             </button>
@@ -1199,17 +1228,11 @@ button:disabled {
 
           <i class="fa-solid fa-users-gear"></i>
 
-          <strong>Judge Authorization Management</strong>
+          <strong>Judge Session Monitor</strong>
 
-          <br>
-
-          This area will display assigned judges, their connection
-          status, individual voting authorization, submitted votes,
-          pending votes and vote cancellation options.
-
-          <br><br>
-
-          <strong>Backend connection pending.</strong>
+          <div id="judgeSessionDetails" aria-live="polite">
+            <p class="section-note">Loading voting-session information...</p>
+          </div>
 
         </div>
 

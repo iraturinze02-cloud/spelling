@@ -1,5 +1,6 @@
+
 // ========================================
-// SPELLING COMPETITION - TIMEKEEPER PANEL
+// SPELLING COMPETITION - TIMEKEEPER
 // ========================================
 
 let competition = null;
@@ -8,101 +9,52 @@ let currentState = null;
 
 let syncInterval = null;
 let syncBusy = false;
+let actionBusy = false;
 
-// Timer controls remain disabled until secure
-// startTimer and stopTimer backend actions exist.
-const TIMER_CONTROLS_ENABLED = false;
+window.addEventListener("load", initializeTimekeeper);
 
-
-// ========================================
-// API HELPER
-// ========================================
-
-async function api(data) {
-
-  const response = await fetch("/api", {
-    method: "POST",
-
-    headers: {
-      "Content-Type": "application/json"
-    },
-
-    body: JSON.stringify(data),
-    cache: "no-store"
-  });
-
-  let result;
-
+async function initializeTimekeeper() {
   try {
-    result = await response.json();
-  } catch {
-    throw new Error("The server returned an invalid response.");
+    setStatus("CONNECTING TO COMPETITION...");
+
+    await loadCompetition();
+    await loadStage();
+    await synchronizeCompetition();
+
+    syncInterval = setInterval(synchronizeCompetition, 1000);
+  } catch (error) {
+    console.error(error);
+    showError(error.message);
+    setConnection(false);
+    setStatus("CONNECTION FAILED");
+  }
+}
+
+async function request(data) {
+  if (typeof api !== "function") {
+    throw new Error("Shared API helper is missing.");
   }
 
-  if (!response.ok) {
-    throw new Error(
-      result.message ||
-      result.error ||
-      "Server request failed."
-    );
+  const result = await api(data);
+
+  if (!result) {
+    throw new Error("Request failed. Check your login and connection.");
+  }
+
+  if (result.success !== true) {
+    throw new Error(result.error || result.message || "Request failed.");
   }
 
   return result;
 }
 
-
-// ========================================
-// INITIALIZATION
-// ========================================
-
-window.addEventListener("load", initializeTimekeeper);
-
-async function initializeTimekeeper() {
-
-  try {
-
-    setStatus("Connecting to competition...");
-
-    await loadCompetition();
-
-    await loadStage();
-
-    await synchronizeCompetition();
-
-    syncInterval = setInterval(
-      synchronizeCompetition,
-      1000
-    );
-
-  } catch (error) {
-
-    console.error("Timekeeper initialization failed:", error);
-
-    showError(error.message);
-
-    setConnection(false);
-
-    setStatus("CONNECTION FAILED");
-
-  }
-
-}
-
-
-// ========================================
-// LOAD ACTIVE COMPETITION
-// ========================================
-
 async function loadCompetition() {
-
-  const result = await api({
+  const result = await request({
     action: "getActiveCompetition"
   });
 
-  if (!result.success || !result.competition) {
-
-    throw new Error("No active competition was found.");
-
+  if (!result.competition) {
+    throw new Error("No active competition found.");
   }
 
   competition = result.competition;
@@ -111,28 +63,16 @@ async function loadCompetition() {
     "competitionName",
     competition.competition_name || "Unnamed Competition"
   );
-
 }
 
-
-// ========================================
-// LOAD ACTIVE STAGE
-// ========================================
-
 async function loadStage() {
-
-  const result = await api({
-
+  const result = await request({
     action: "getActiveStage",
-
     competition_id: competition.id
-
   });
 
-  if (!result.success || !result.stage) {
-
-    throw new Error("No active stage was found.");
-
+  if (!result.stage) {
+    throw new Error("No active stage found.");
   }
 
   stage = result.stage;
@@ -141,35 +81,18 @@ async function loadStage() {
     "stageName",
     `Stage ${stage.stage_number} - ${stage.stage_name}`
   );
-
 }
 
-
-// ========================================
-// SHARED COMPETITION SYNCHRONIZATION
-// ========================================
-
 async function synchronizeCompetition() {
-
-  if (syncBusy || !competition) return;
+  if (syncBusy || !competition || actionBusy) return;
 
   syncBusy = true;
 
   try {
-
-    const result = await api({
-
+    const result = await request({
       action: "getCompetitionRealtime",
-
       competition_id: competition.id
-
     });
-
-    if (!result || result.success !== true) {
-
-      throw new Error("Could not retrieve competition state.");
-
-    }
 
     currentState = result;
 
@@ -179,238 +102,171 @@ async function synchronizeCompetition() {
 
     setText(
       "lastUpdated",
-      "Last synchronized: " +
-      new Date().toLocaleTimeString()
+      "Last synchronized: " + new Date().toLocaleTimeString()
     );
 
     showError("");
-
   } catch (error) {
-
-    console.error("Competition synchronization failed:", error);
-
+    console.error("Synchronization failed:", error);
     setConnection(false);
-
     showError(error.message);
-
   } finally {
-
     syncBusy = false;
-
   }
-
 }
 
-
-// ========================================
-// UPDATE DISPLAY
-// ========================================
-
 function updateTimekeeperDisplay(state) {
+  setText(
+    "participantName",
+    state.student?.full_name || "Waiting for participant"
+  );
 
-  const participant =
-    state.student?.full_name || "Waiting for participant";
+  setText(
+    "currentWord",
+    state.current_word || state.word || "WAITING"
+  );
 
-  const word =
-    state.current_word ||
-    state.word ||
-    "WAITING";
-
-  const timeLeft =
-    Number(state.time_left || 0);
-
-  const timerRunning =
-    state.started === true;
-
-  setText("participantName", participant);
-
-  setText("currentWord", word);
+  const timeLeft = Math.max(0, Number(state.time_left) || 0);
+  const running = state.started === true;
 
   setText("timer", timeLeft);
 
-  const timerElement =
-    document.getElementById("timer");
+  document.getElementById("timer")
+    ?.classList.toggle("running", running);
 
-  if (timerElement) {
-
-    timerElement.classList.toggle(
-      "running",
-      timerRunning
-    );
-
-  }
-
-  if (timerRunning) {
-
+  if (running) {
     setStatus("TIMER RUNNING");
-
+  } else if (state.spelling_authorized === true) {
+    setStatus("READY — SPELLING AUTHORIZED");
+  } else if (state.voting_open === true) {
+    setStatus("VOTING IN PROGRESS");
+  } else if (state.timer_stopped_at) {
+    setStatus("TIMER STOPPED — WAITING FOR LEADER");
   } else {
-
-    setStatus("TIMER STOPPED");
-
+    setStatus("WAITING FOR LEADER");
   }
 
-  updateTimerControls(timerRunning);
-
+  updateTimerControls(state);
 }
 
-
-// ========================================
-// TIMER CONTROL AVAILABILITY
-// ========================================
-
-function updateTimerControls(timerRunning) {
-
-  const startButton =
-    document.getElementById("startButton");
-
-  const stopButton =
-    document.getElementById("stopButton");
+function updateTimerControls(state) {
+  const startButton = document.getElementById("startButton");
+  const stopButton = document.getElementById("stopButton");
 
   if (!startButton || !stopButton) return;
 
-  startButton.disabled =
-    !TIMER_CONTROLS_ENABLED || timerRunning;
+  const running = state.started === true;
 
-  stopButton.disabled =
-    !TIMER_CONTROLS_ENABLED || !timerRunning;
+  const canStart =
+    state.spelling_authorized === true &&
+    !running &&
+    state.voting_open !== true;
 
-  if (TIMER_CONTROLS_ENABLED) {
+  startButton.disabled = actionBusy || !canStart;
+  stopButton.disabled = actionBusy || !running;
 
-    startButton.style.cursor = "pointer";
-    stopButton.style.cursor = "pointer";
+  startButton.style.cursor = startButton.disabled ? "not-allowed" : "pointer";
+  stopButton.style.cursor = stopButton.disabled ? "not-allowed" : "pointer";
 
-    startButton.style.opacity =
-      timerRunning ? ".45" : "1";
-
-    stopButton.style.opacity =
-      timerRunning ? "1" : ".45";
-
-  }
-
+  startButton.style.opacity = startButton.disabled ? ".45" : "1";
+  stopButton.style.opacity = stopButton.disabled ? ".45" : "1";
 }
-
-
-// ========================================
-// START TIMER
-// ========================================
 
 async function startTimer() {
+  if (actionBusy || !currentState) return;
 
-  if (!TIMER_CONTROLS_ENABLED) {
-
-    showError("Timer controls are not activated yet.");
-
+  if (currentState.spelling_authorized !== true) {
+    showError("The Leader must authorize spelling first.");
     return;
-
   }
 
-  // The secure backend action will be connected here.
-  showError("The startTimer backend action is not installed.");
+  actionBusy = true;
+  updateTimerControls(currentState);
 
+  try {
+    await request({
+      action: "startTimer",
+      competition_id: competition.id
+    });
+
+    await synchronizeAfterAction();
+  } catch (error) {
+    showError(error.message);
+  } finally {
+    actionBusy = false;
+    if (currentState) updateTimerControls(currentState);
+  }
 }
-
-
-// ========================================
-// STOP TIMER
-// ========================================
 
 async function stopTimer() {
+  if (actionBusy || !currentState) return;
 
-  if (!TIMER_CONTROLS_ENABLED) {
-
-    showError("Timer controls are not activated yet.");
-
+  if (currentState.started !== true) {
+    showError("There is no running timer.");
     return;
-
   }
 
-  // The secure backend action will be connected here.
-  showError("The stopTimer backend action is not installed.");
+  actionBusy = true;
+  updateTimerControls(currentState);
 
+  try {
+    await request({
+      action: "stopTimer",
+      competition_id: competition.id
+    });
+
+    await synchronizeAfterAction();
+  } catch (error) {
+    showError(error.message);
+  } finally {
+    actionBusy = false;
+    if (currentState) updateTimerControls(currentState);
+  }
 }
 
+async function synchronizeAfterAction() {
+  const result = await request({
+    action: "getCompetitionRealtime",
+    competition_id: competition.id
+  });
 
-// ========================================
-// CONNECTION STATUS
-// ========================================
+  currentState = result;
+  updateTimekeeperDisplay(result);
+}
 
 function setConnection(connected) {
+  const dot = document.getElementById("connectionDot");
+  const status = document.getElementById("connectionStatus");
 
-  const dot =
-    document.getElementById("connectionDot");
-
-  const status =
-    document.getElementById("connectionStatus");
-
-  if (dot) {
-
-    dot.classList.toggle("online", connected);
-
-    dot.classList.toggle("offline", !connected);
-
-  }
+  dot?.classList.toggle("online", connected);
+  dot?.classList.toggle("offline", !connected);
 
   if (status) {
-
     status.textContent = connected
       ? "Connected to competition"
       : "Connection lost";
-
   }
-
 }
-
-
-// ========================================
-// STATUS DISPLAY
-// ========================================
 
 function setStatus(message) {
-
   setText("timerStatus", message);
-
 }
-
-
-// ========================================
-// ERROR DISPLAY
-// ========================================
 
 function showError(message) {
-
   setText("errorMessage", message || "");
-
 }
-
-
-// ========================================
-// SAFE TEXT HELPER
-// ========================================
 
 function setText(id, value) {
-
   const element = document.getElementById(id);
-
-  if (element) {
-
-    element.textContent = value ?? "";
-
-  }
-
+  if (element) element.textContent = value ?? "";
 }
 
+document.getElementById("startButton")
+  ?.addEventListener("click", startTimer);
 
-// ========================================
-// CLEANUP
-// ========================================
+document.getElementById("stopButton")
+  ?.addEventListener("click", stopTimer);
 
 window.addEventListener("beforeunload", () => {
-
-  if (syncInterval) {
-
-    clearInterval(syncInterval);
-
-  }
-
+  if (syncInterval) clearInterval(syncInterval);
 });

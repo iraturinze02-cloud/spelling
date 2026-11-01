@@ -80,14 +80,11 @@ const session = await verifySessionToken(
   context.env.AUTH_SECRET
 );
 
-// Public display pages may only read public competition data.
 const publicActions = [
   "getActiveCompetition",
   "getCompetitionRealtime"
 ];
 
-// Judge accounts may only read competition information
-// and submit their own votes.
 const judgeActions = [
   "getActiveCompetition",
   "getActiveStage",
@@ -96,7 +93,19 @@ const judgeActions = [
   "saveJudgeVote"
 ];
 
+const timekeeperActions = [
+  "getActiveCompetition",
+  "getActiveStage",
+  "getCompetitionRealtime",
+  "startTimer",
+  "stopTimer"
+];
+
+let actorRole = null;
+let actorId = null;
+
 if (!session) {
+
   if (!publicActions.includes(action)) {
     return Response.json({
       success: false,
@@ -104,44 +113,82 @@ if (!session) {
       code: "UNAUTHORIZED"
     }, { status: 401 });
   }
-} else if (session.role === "teacher") {
-
-  // Teacher is the competition leader.
-  // The leader must not vote as a judge.
-  if (action === "saveJudgeVote") {
-    return Response.json({
-      success: false,
-      error: "The competition leader cannot submit judge votes."
-    }, { status: 403 });
-  }
-
-} else if (session.role === "judge") {
-
-  if (!judgeActions.includes(action)) {
-    return Response.json({
-      success: false,
-      error: "Judges are not permitted to perform this action.",
-      code: "FORBIDDEN"
-    }, { status: 403 });
-  }
-
-} else if (session.role === "timekeeper") {
-
-  return Response.json({
-    success: false,
-    error: "Timekeeper permissions are not enabled yet.",
-    code: "FORBIDDEN"
-  }, { status: 403 });
 
 } else {
 
-  return Response.json({
-    success: false,
-    error: "Unknown account role."
-  }, { status: 403 });
-}
+  actorId = Number(session.sub);
 
-    
+  if (!Number.isSafeInteger(actorId) || actorId <= 0) {
+    return Response.json({
+      success: false,
+      error: "Invalid account session."
+    }, { status: 401 });
+  }
+
+  // Always verify the current database role.
+  // Never rely only on the role stored in an old JWT.
+
+  const userRows = await sql`
+    SELECT id, role
+    FROM users
+    WHERE id = ${actorId}
+    LIMIT 1
+  `;
+
+  if (!userRows.length) {
+    return Response.json({
+      success: false,
+      error: "Account no longer exists."
+    }, { status: 401 });
+  }
+
+  actorRole = String(userRows[0].role);
+
+  if (actorRole !== session.role) {
+    return Response.json({
+      success: false,
+      error: "Your account permissions have changed. Please sign in again."
+    }, { status: 403 });
+  }
+
+  if (actorRole === "teacher") {
+
+    if (action === "saveJudgeVote") {
+      return Response.json({
+        success: false,
+        error: "The competition Leader cannot vote as a judge."
+      }, { status: 403 });
+    }
+
+  } else if (actorRole === "judge") {
+
+    if (!judgeActions.includes(action)) {
+      return Response.json({
+        success: false,
+        error: "Judges are not permitted to perform this action.",
+        code: "FORBIDDEN"
+      }, { status: 403 });
+    }
+
+  } else if (actorRole === "timekeeper") {
+
+    if (!timekeeperActions.includes(action)) {
+      return Response.json({
+        success: false,
+        error: "Timekeepers can only monitor and operate the timer.",
+        code: "FORBIDDEN"
+      }, { status: 403 });
+    }
+
+  } else {
+
+    return Response.json({
+      success: false,
+      error: "Unknown account role."
+    }, { status: 403 });
+
+  }
+}
 // ================================================
 // GET CURRENT VOTING SESSION
 // ================================================
@@ -1358,6 +1405,445 @@ message:error.message
     }
 
     
+
+// =====================================================
+// AUTHORIZE SPELLING — LEADER ONLY
+// =====================================================
+
+if (action === "authorizeSpelling") {
+
+  if (actorRole !== "teacher") {
+    return Response.json({
+      success: false,
+      error: "Only the Leader can authorize spelling."
+    }, { status: 403 });
+  }
+
+  const competitionId = Number(body.competition_id);
+
+  if (!competitionId) {
+    return Response.json({
+      success: false,
+      error: "Invalid competition."
+    }, { status: 400 });
+  }
+
+  const states = await sql`
+    SELECT *
+    FROM competition_state
+    WHERE competition_id = ${competitionId}
+    LIMIT 1
+  `;
+
+  if (!states.length) {
+    return Response.json({
+      success: false,
+      error: "Competition state not found."
+    }, { status: 404 });
+  }
+
+  const state = states[0];
+
+  const stages = await sql`
+    SELECT *
+    FROM competition_stages
+    WHERE competition_id = ${competitionId}
+      AND status = 'active'
+    LIMIT 1
+  `;
+
+  if (!stages.length ||
+      Number(stages[0].stage_number) !== Number(state.stage_number)) {
+    return Response.json({
+      success: false,
+      error: "The active stage does not match the competition state."
+    }, { status: 409 });
+  }
+
+  if (state.started || state.voting_open ||
+      state.spelling_authorized) {
+    return Response.json({
+      success: false,
+      error: "The current word is already active or authorized."
+    }, { status: 409 });
+  }
+
+  const students = await sql`
+    SELECT s.id, s.full_name, d.group_id, g.group_number
+    FROM student_stage_progress sp
+    JOIN students s ON s.id = sp.student_id
+    JOIN student_draws d
+      ON d.student_id = sp.student_id
+      AND d.competition_id = sp.competition_id
+      AND d.stage_number = sp.stage_number
+    JOIN word_groups g ON g.id = d.group_id
+    WHERE sp.competition_id = ${competitionId}
+      AND sp.stage_number = ${state.stage_number}
+      AND sp.status = 'active'
+    ORDER BY d.draw_order ASC
+  `;
+
+  const student =
+    students[Number(state.current_student_index)];
+
+  if (!student) {
+    return Response.json({
+      success: false,
+      error: "No active participant was found."
+    }, { status: 409 });
+  }
+
+  const words = await sql`
+    SELECT w.word
+    FROM words w
+    JOIN word_groups g ON g.id = w.group_id
+    WHERE g.group_number = ${student.group_number}
+      AND g.competition_id = ${competitionId}
+      AND g.stage_number = ${state.stage_number}
+    ORDER BY w.id ASC
+  `;
+
+  const wordsPerRound =
+    Math.max(1, Number(stages[0].words_per_round) || 3);
+
+  const wordIndex =
+    ((Number(state.current_round) - 1) * wordsPerRound) +
+    Number(state.current_word_index);
+
+  const word = words[wordIndex]?.word;
+
+  if (!word) {
+    return Response.json({
+      success: false,
+      error: "No valid word is available."
+    }, { status: 409 });
+  }
+
+  const openSessions = await sql`
+    SELECT id
+    FROM competition_vote_sessions
+    WHERE competition_id = ${competitionId}
+      AND status = 'open'
+    LIMIT 1
+  `;
+
+  if (openSessions.length) {
+    return Response.json({
+      success: false,
+      error: "An existing voting session must be closed first."
+    }, { status: 409 });
+  }
+
+  const updated = await sql`
+    UPDATE competition_state
+    SET
+      spelling_authorized = TRUE,
+      spelling_authorized_by = ${actorId},
+      spelling_authorized_at = NOW(),
+      competition_status = 'Spelling Authorized'
+    WHERE competition_id = ${competitionId}
+      AND started = FALSE
+      AND voting_open = FALSE
+      AND spelling_authorized = FALSE
+    RETURNING id
+  `;
+
+  if (!updated.length) {
+    return Response.json({
+      success: false,
+      error: "The word state changed. Refresh and try again."
+    }, { status: 409 });
+  }
+
+  await sql`
+    INSERT INTO competition_audit_log (
+      competition_id,
+      stage_number,
+      actor_user_id,
+      actor_role,
+      event_type,
+      event_details
+    )
+    VALUES (
+      ${competitionId},
+      ${state.stage_number},
+      ${actorId},
+      'teacher',
+      'SPELLING_AUTHORIZED',
+      ${JSON.stringify({
+        student_id: student.id,
+        student_name: student.full_name,
+        round: state.current_round,
+        word_index: wordIndex
+      })}::jsonb
+    )
+  `;
+
+  await broadcastCompetition(context, competitionId, {
+    action: "authorizeSpelling"
+  });
+
+  return Response.json({
+    success: true,
+    message: "Spelling authorized. Waiting for the Timekeeper."
+  });
+}
+
+
+// =====================================================
+// START TIMER — TIMEKEEPER ONLY
+// =====================================================
+
+if (action === "startTimer") {
+
+  if (actorRole !== "timekeeper") {
+    return Response.json({
+      success: false,
+      error: "Only the Timekeeper can start the timer."
+    }, { status: 403 });
+  }
+
+  const competitionId = Number(body.competition_id);
+
+  const states = await sql`
+    SELECT *
+    FROM competition_state
+    WHERE competition_id = ${competitionId}
+    LIMIT 1
+  `;
+
+  if (!states.length) {
+    return Response.json({
+      success: false,
+      error: "Competition state not found."
+    }, { status: 404 });
+  }
+
+  const state = states[0];
+
+  if (!state.spelling_authorized ||
+      state.started ||
+      state.voting_open) {
+    return Response.json({
+      success: false,
+      error: "The Leader must authorize spelling before the timer starts."
+    }, { status: 409 });
+  }
+
+  const stages = await sql`
+    SELECT *
+    FROM competition_stages
+    WHERE competition_id = ${competitionId}
+      AND status = 'active'
+    LIMIT 1
+  `;
+
+  if (!stages.length ||
+      Number(stages[0].stage_number) !== Number(state.stage_number)) {
+    return Response.json({
+      success: false,
+      error: "No matching active stage."
+    }, { status: 409 });
+  }
+
+  const students = await sql`
+    SELECT s.id, d.group_id, g.group_number
+    FROM student_stage_progress sp
+    JOIN students s ON s.id = sp.student_id
+    JOIN student_draws d
+      ON d.student_id = sp.student_id
+      AND d.competition_id = sp.competition_id
+      AND d.stage_number = sp.stage_number
+    JOIN word_groups g ON g.id = d.group_id
+    WHERE sp.competition_id = ${competitionId}
+      AND sp.stage_number = ${state.stage_number}
+      AND sp.status = 'active'
+    ORDER BY d.draw_order ASC
+  `;
+
+  const student =
+    students[Number(state.current_student_index)];
+
+  if (!student) {
+    return Response.json({
+      success: false,
+      error: "No active participant."
+    }, { status: 409 });
+  }
+
+  const words = await sql`
+    SELECT w.word
+    FROM words w
+    JOIN word_groups g ON g.id = w.group_id
+    WHERE g.group_number = ${student.group_number}
+      AND g.competition_id = ${competitionId}
+      AND g.stage_number = ${state.stage_number}
+    ORDER BY w.id ASC
+  `;
+
+  const wordsPerRound =
+    Math.max(1, Number(stages[0].words_per_round) || 3);
+
+  const wordIndex =
+    ((Number(state.current_round) - 1) * wordsPerRound) +
+    Number(state.current_word_index);
+
+  const word = words[wordIndex]?.word;
+
+  if (!word) {
+    return Response.json({
+      success: false,
+      error: "No valid word is available."
+    }, { status: 409 });
+  }
+
+  // Preserve your existing duration policy.
+  const length = word.length;
+
+  const duration =
+    length <= 4 ? 8 :
+    length <= 7 ? 12 :
+    length <= 10 ? 15 : 20;
+
+  const updated = await sql`
+    UPDATE competition_state
+    SET
+      spelling_authorized = FALSE,
+      started = TRUE,
+      time_left = ${duration},
+      timer_duration_seconds = ${duration},
+      timer_started_at = NOW(),
+      timer_deadline_at =
+        NOW() + (${duration} * INTERVAL '1 second'),
+      timer_stopped_at = NULL,
+      timer_started_by = ${actorId},
+      timer_stopped_by = NULL,
+      competition_status = 'Timer Running'
+    WHERE competition_id = ${competitionId}
+      AND spelling_authorized = TRUE
+      AND started = FALSE
+      AND voting_open = FALSE
+    RETURNING id
+  `;
+
+  if (!updated.length) {
+    return Response.json({
+      success: false,
+      error: "Timer state changed. Refresh before trying again."
+    }, { status: 409 });
+  }
+
+  await sql`
+    INSERT INTO competition_audit_log (
+      competition_id,
+      stage_number,
+      actor_user_id,
+      actor_role,
+      event_type,
+      event_details
+    )
+    VALUES (
+      ${competitionId},
+      ${state.stage_number},
+      ${actorId},
+      'timekeeper',
+      'TIMER_STARTED',
+      ${JSON.stringify({
+        student_id: student.id,
+        word_index: wordIndex,
+        duration_seconds: duration
+      })}::jsonb
+    )
+  `;
+
+  await broadcastCompetition(context, competitionId, {
+    action: "startTimer"
+  });
+
+  return Response.json({
+    success: true,
+    duration_seconds: duration
+  });
+}
+
+
+// =====================================================
+// STOP TIMER — TIMEKEEPER ONLY
+// =====================================================
+
+if (action === "stopTimer") {
+
+  if (actorRole !== "timekeeper") {
+    return Response.json({
+      success: false,
+      error: "Only the Timekeeper can stop the timer."
+    }, { status: 403 });
+  }
+
+  const competitionId = Number(body.competition_id);
+
+  const updated = await sql`
+    UPDATE competition_state
+    SET
+      time_left = GREATEST(
+        0,
+        CEIL(EXTRACT(
+          EPOCH FROM (timer_deadline_at - NOW())
+        ))
+      )::integer,
+      started = FALSE,
+      timer_stopped_at = NOW(),
+      timer_stopped_by = ${actorId},
+      competition_status = CASE
+        WHEN timer_deadline_at <= NOW()
+          THEN 'Time Expired'
+        ELSE 'Timer Stopped'
+      END
+    WHERE competition_id = ${competitionId}
+      AND started = TRUE
+      AND timer_deadline_at IS NOT NULL
+    RETURNING time_left, competition_status, stage_number
+  `;
+
+  if (!updated.length) {
+    return Response.json({
+      success: false,
+      error: "There is no running timer to stop."
+    }, { status: 409 });
+  }
+
+  await sql`
+    INSERT INTO competition_audit_log (
+      competition_id,
+      stage_number,
+      actor_user_id,
+      actor_role,
+      event_type,
+      event_details
+    )
+    VALUES (
+      ${competitionId},
+      ${updated[0].stage_number},
+      ${actorId},
+      'timekeeper',
+      'TIMER_STOPPED',
+      ${JSON.stringify({
+        remaining_seconds: updated[0].time_left,
+        status: updated[0].competition_status
+      })}::jsonb
+    )
+  `;
+
+  await broadcastCompetition(context, competitionId, {
+    action: "stopTimer"
+  });
+
+  return Response.json({
+    success: true,
+    time_left: updated[0].time_left,
+    status: updated[0].competition_status
+  });
+}
     
     // =====================================================
     // UPDATE COMPETITION STATE
@@ -2318,6 +2804,17 @@ if (action === "openVoting") {
 
   const state = stateRows[0];
 
+if (
+  state.started ||
+  !state.timer_started_at ||
+  !state.timer_stopped_at
+) {
+  return Response.json({
+    success: false,
+    error: "The Timekeeper must start and stop the current word timer before voting can be opened."
+  }, { status: 409 });
+}
+  
   const stageRows = await sql`
     SELECT *
     FROM competition_stages

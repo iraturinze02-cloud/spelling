@@ -105,97 +105,216 @@ function stopAllSounds() {
 window.addEventListener("load", initializeCompetition);
 
 
+let competitionReadinessReport = null;
+let readinessInspectionBusy = false;
+let competitionInitiatedInThisPage = false;
+
 async function initializeCompetition() {
+  await inspectCompetitionReadiness();
+}
+
+async function inspectCompetitionReadiness() {
+  if (readinessInspectionBusy) return;
+  readinessInspectionBusy = true;
+  setReadinessBanner("Inspecting competition and stage readiness...", "info");
+  document.getElementById("confirmReadinessBtn").disabled = true;
+  document.getElementById("readinessSummary").innerHTML = "";
+  document.getElementById("readinessParticipantArea").innerHTML = "";
+  document.getElementById("leaderStats").hidden = true;
+  document.getElementById("leaderOperations").hidden = true;
+
   try {
-
-    // LOAD ACTIVE COMPETITION
-
-    const competitionRes = await api({
-      action: "getActiveCompetition"
-    });
-
-    competitionState.competition =
-      competitionRes?.competition || null;
-
+    const competitionRes = await api({ action: "getActiveCompetition" });
+    competitionState.competition = competitionRes?.competition || null;
     if (!competitionState.competition) {
-      updateTeacherStatus("No active competition");
-      playMusic("sounds/welcome.mp3");
+      competitionReadinessReport = null;
+      setReadinessBanner("No active competition was found. Create or activate a competition before continuing.", "error");
       return;
     }
-
-    setText(
-      "competitionTitle",
-      competitionState.competition.competition_name
-    );
-
-
-    // LOAD ACTIVE STAGE
 
     const stageRes = await api({
       action: "getActiveStage",
       competition_id: competitionState.competition.id
     });
-
-    competitionState.stage =
-      stageRes?.stage || null;
-
+    competitionState.stage = stageRes?.stage || null;
     if (!competitionState.stage) {
-      updateTeacherStatus("No active stage");
+      competitionReadinessReport = null;
+      setReadinessBanner("No active stage was found for this competition. The Leader Panel remains locked.", "error");
+      renderReadinessIdentity(competitionState.competition, null);
       return;
     }
 
-    setText(
-      "stageTitle",
-      `Stage ${competitionState.stage.stage_number} • ${competitionState.stage.stage_name}`
-    );
+    const report = await api({
+      action: "inspectCompetitionReadiness",
+      competition_id: competitionState.competition.id,
+      stage_number: competitionState.stage.stage_number
+    });
+    if (!report || report.success === false) {
+      throw new Error(report?.message || "The readiness inspection could not be completed.");
+    }
 
+    competitionReadinessReport = report;
+    renderReadinessReport(report);
+  } catch (error) {
+    console.error("Readiness inspection failed:", error);
+    competitionReadinessReport = null;
+    setReadinessBanner(error.message || "Readiness inspection failed. Check the connection and try again.", "error");
+  } finally {
+    readinessInspectionBusy = false;
+  }
+}
 
-    // LOAD LIVE STUDENTS
+function setReadinessBanner(message, type = "info") {
+  const el = document.getElementById("readinessBanner");
+  if (!el) return;
+  el.className = "readiness-banner" + (type === "error" ? " error" : type === "success" ? " success" : "");
+  el.textContent = message;
+}
+
+function renderReadinessIdentity(competition, stage) {
+  const summary = document.getElementById("readinessSummary");
+  const compName = competition?.competition_name || "Unknown competition";
+  const stageName = stage ? `Stage ${stage.stage_number} — ${stage.stage_name}` : "No active stage";
+  summary.textContent = `${compName} · ${stageName}`;
+}
+
+function renderReadinessReport(report) {
+  const competition = report.competition || competitionState.competition;
+  const stage = report.stage || competitionState.stage;
+  renderReadinessIdentity(competition, stage);
+
+  const checks = report.checks || {};
+  const labels = {
+    competition: "Active competition",
+    stage: "Active stage",
+    configuration: "Stage configuration",
+    participants: "Participant assignments",
+    draw_order: "Complete sequential draw order",
+    word_groups: "Valid word groups and word availability",
+    judges: "Judge assignments and activation",
+    existing_records: "Existing stage records reviewed"
+  };
+  const checksHtml = Object.entries(labels).map(([key, label]) => {
+    const check = checks[key] || {};
+    const passed = check.passed === true && check.review_required !== true;
+    const detail = readinessCheckDetail(key, check);
+    return `<div class="readiness-check ${passed ? "pass" : "fail"}"><i class="fa-solid ${passed ? "fa-circle-check" : "fa-circle-xmark"}"></i><div><strong>${escapeReadinessText(label)}</strong><div>${escapeReadinessText(detail)}</div></div></div>`;
+  }).join("");
+
+  let issuesHtml = "";
+  if (Array.isArray(report.issues) && report.issues.length) {
+    issuesHtml = `<ul class="readiness-issues">${report.issues.map(issue => `<li>${escapeReadinessText(issue)}</li>`).join("")}</ul>`;
+  }
+  document.getElementById("readinessSummary").innerHTML = `<div class="readiness-checks">${checksHtml}</div>${issuesHtml}`;
+
+  const participants = Array.isArray(report.participants) ? report.participants : [];
+  if (participants.length) {
+    const rows = participants.map((person, index) => `<tr><td>${index + 1}</td><td>${escapeReadinessText(person.full_name || "Unnamed participant")}</td><td>${escapeReadinessText(person.group_number ?? "—")}</td><td>${escapeReadinessText(person.draw_order ?? "—")}</td></tr>`).join("");
+    document.getElementById("readinessParticipantArea").innerHTML = `<h4>Participants — original draw order</h4><div class="readiness-table-wrap"><table class="readiness-table"><thead><tr><th>Position</th><th>Participant</th><th>Word group</th><th>Draw order</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  } else {
+    document.getElementById("readinessParticipantArea").innerHTML = `<p class="readiness-footnote">No participants were returned by the readiness inspection.</p>`;
+  }
+
+  const ready = report.ready === true && participants.length > 0;
+  if (ready) {
+    setReadinessBanner("All required checks passed. Review the participant list before initiating the competition.", "success");
+    document.getElementById("confirmReadinessBtn").disabled = false;
+  } else {
+    setReadinessBanner("Readiness checks have not passed. Competition operations are locked. Resolve the issues below and inspect again.", "error");
+    document.getElementById("confirmReadinessBtn").disabled = true;
+  }
+}
+
+function readinessCheckDetail(key, check) {
+  switch (key) {
+    case "participants": return `${check.count ?? 0} participant(s) found`;
+    case "draw_order": return `Missing positions: ${check.missing_positions ?? "—"}; inconsistent positions: ${check.inconsistent_positions ?? "—"}`;
+    case "word_groups": return `Missing groups: ${check.missing_groups ?? "—"}; insufficient word groups: ${check.insufficient_word_groups ?? "—"}`;
+    case "judges": return `Assigned judges: ${check.assigned_count ?? 0}; stage activation verifiable: ${check.stage_activation_verifiable === true ? "Yes" : "No"}`;
+    case "existing_records": {
+      const records = check.records || {};
+      return `Attempts: ${records.word_attempts ?? 0}; votes: ${records.judge_votes ?? 0}; voting sessions: ${records.voting_sessions ?? 0}${check.review_required ? " — Leader review required" : ""}`;
+    }
+    case "configuration": return `Rounds: ${check.total_rounds ?? "—"}; words per round: ${check.words_per_round ?? "—"}; total words: ${check.total_words ?? "—"}`;
+    case "stage": return `Stage ${check.stage_number ?? "—"}: ${check.stage_name ?? "—"}`;
+    case "competition": return check.name || "Competition record found";
+    default: return check.passed ? "Passed" : "Not passed";
+  }
+}
+
+function escapeReadinessText(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[char]));
+}
+
+async function recheckCompetitionReadiness() {
+  await inspectCompetitionReadiness();
+}
+
+async function confirmReadinessAndInitiate() {
+  const report = competitionReadinessReport;
+  if (!report || report.ready !== true || !Array.isArray(report.participants) || !report.participants.length) {
+    alert("The competition is not ready. Resolve all failed checks first.");
+    return;
+  }
+
+  const competitionName = report.competition?.competition_name || competitionState.competition?.competition_name || "this competition";
+  const stageNumber = report.stage?.stage_number ?? competitionState.stage?.stage_number;
+  const stageName = report.stage?.stage_name || competitionState.stage?.stage_name || "the active stage";
+
+  if (!confirm(`Confirm the participant list in its original draw order for:\n\n${competitionName}\n\n${report.participants.length} participant(s).`)) return;
+  if (!confirm(`Final initiation confirmation:\n\nCompetition: ${competitionName}\nStage: ${stageNumber} — ${stageName}\n\nInitiate this stage now?`)) return;
+
+  // The current API has no dedicated, verified initiation/audit action.
+  // Therefore this only unlocks the existing frontend in this page session;
+  // it does not claim to persist an initiation timestamp on the server.
+  competitionInitiatedInThisPage = true;
+  await initializeOperationalCompetition();
+}
+
+async function initializeOperationalCompetition() {
+  try {
+    const competitionRes = await api({ action: "getActiveCompetition" });
+    competitionState.competition = competitionRes?.competition || null;
+    if (!competitionState.competition) throw new Error("The active competition is no longer available.");
+
+    const stageRes = await api({ action: "getActiveStage", competition_id: competitionState.competition.id });
+    competitionState.stage = stageRes?.stage || null;
+    if (!competitionState.stage) throw new Error("The active stage is no longer available.");
 
     const studentsRes = await api({
       action: "getLiveStudents",
       competition_id: competitionState.competition.id,
       stage_number: competitionState.stage.stage_number
     });
-
-    competitionState.students =
-      studentsRes?.students || [];
-
-
-    // LOAD WORD GROUPS
+    competitionState.students = studentsRes?.students || [];
 
     const wordsRes = await api({
       action: "getWordGroups",
       competition_id: competitionState.competition.id,
       stage_number: competitionState.stage.stage_number
     });
-
-    competitionState.wordGroups =
-      wordsRes?.groups || [];
-
-
-    // RESTORE SAVED STATE
+    competitionState.wordGroups = wordsRes?.groups || [];
 
     await restoreCompetitionState();
-
-
-    // PREPARE CURRENT PARTICIPANT
-
     await prepareCurrentParticipant();
-
-
-    // START REALTIME SYNCHRONIZATION
-
     startRealtimeSync();
 
-    updateTeacherStatus("Competition Ready");
-
+    document.getElementById("readinessPanel").hidden = true;
+    document.getElementById("leaderStats").hidden = false;
+    document.getElementById("leaderOperations").hidden = false;
+    setReadinessBanner("Competition initiated in this page session.", "success");
+    updateTeacherStatus("Competition Ready — awaiting Leader participant confirmation");
   } catch (error) {
-    console.error("Competition initialization failed:", error);
-    updateTeacherStatus("Failed to initialize");
+    console.error("Operational panel initialization failed:", error);
+    competitionInitiatedInThisPage = false;
+    document.getElementById("leaderStats").hidden = true;
+    document.getElementById("leaderOperations").hidden = true;
+    document.getElementById("readinessPanel").hidden = false;
+    setReadinessBanner(error.message || "Could not open the operational panel.", "error");
   }
 }
-
 
 // ==========================================
 // PARTICIPANT PREPARATION
@@ -341,6 +460,9 @@ function calculateAllowedTime(word) {
 // ==========================================
 
 async function startWord() {
+  updateTeacherStatus("Only the Timekeeper Panel can start or operate the timer.");
+  return;
+
 
   if (!competitionState.currentStudent) {
     updateTeacherStatus("No participant selected");
@@ -746,6 +868,11 @@ async function finalizeResult() {
 // ==========================================
 
 async function nextWord() {
+  if (!finalizedWordKey) {
+    updateTeacherStatus("Confirm the current word result before progressing.");
+    return;
+  }
+
 
   clearInterval(realtimeTimer);
 
@@ -834,6 +961,7 @@ async function nextWord() {
 
   await saveCompetitionState();
 
+  finalizedWordKey = null;
   updateTeacherStatus("Next Word Ready");
 
 }
@@ -844,6 +972,9 @@ async function nextWord() {
 // ==========================================
 
 async function nextParticipant() {
+  updateTeacherStatus("Direct participant skipping is disabled. Participants must follow the confirmed word and round workflow.");
+  return;
+
 
   clearInterval(realtimeTimer);
 

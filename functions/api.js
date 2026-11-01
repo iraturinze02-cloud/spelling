@@ -3114,6 +3114,382 @@ words
 });
 
 }
+
+    
+// =====================================================
+// INSPECT COMPETITION READINESS
+// READ-ONLY: NEVER DELETES OR MODIFIES RECORDS
+// =====================================================
+
+if (action === "inspectCompetitionReadiness") {
+
+  try {
+
+    const competitionId = Number(body.competition_id);
+    const stageNumber = Number(body.stage_number);
+
+    if (
+      !Number.isInteger(competitionId) ||
+      competitionId <= 0 ||
+      !Number.isInteger(stageNumber) ||
+      stageNumber <= 0
+    ) {
+      return Response.json({
+        success: false,
+        message: "Valid competition and stage numbers are required."
+      }, { status: 400 });
+    }
+
+    const issues = [];
+    const checks = {};
+
+    // 1. CHECK ACTIVE COMPETITION
+
+    const competitions = await sql`
+      SELECT *
+      FROM competitions
+      WHERE id = ${competitionId}
+        AND status = 'active'
+      LIMIT 1
+    `;
+
+    const competition = competitions[0] || null;
+
+    checks.competition = {
+      passed: !!competition,
+      name: competition?.competition_name || null
+    };
+
+    if (!competition) {
+      issues.push("The selected competition is not active or does not exist.");
+    }
+
+    // 2. CHECK ACTIVE STAGE
+
+    const stages = await sql`
+      SELECT *
+      FROM competition_stages
+      WHERE competition_id = ${competitionId}
+        AND stage_number = ${stageNumber}
+        AND status = 'active'
+      LIMIT 1
+    `;
+
+    const stage = stages[0] || null;
+
+    checks.stage = {
+      passed: !!stage,
+      stage_number: stage?.stage_number || null,
+      stage_name: stage?.stage_name || null
+    };
+
+    if (!stage) {
+      issues.push("The selected stage is not active for this competition.");
+    }
+
+    // Stop dependent checks if the competition or stage is invalid.
+
+    if (!competition || !stage) {
+      return Response.json({
+        success: true,
+        ready: false,
+        competition,
+        stage,
+        checks,
+        participants: [],
+        judges: [],
+        issues
+      });
+    }
+
+    // 3. CHECK STAGE CONFIGURATION
+
+    const totalRounds = Number(stage.total_rounds);
+    const wordsPerRound = Number(stage.words_per_round);
+    const configuredTotalWords = Number(stage.total_words);
+
+    const expectedWords = totalRounds * wordsPerRound;
+
+    const validConfiguration =
+      Number.isInteger(totalRounds) &&
+      totalRounds > 0 &&
+      Number.isInteger(wordsPerRound) &&
+      wordsPerRound > 0 &&
+      Number.isInteger(configuredTotalWords) &&
+      configuredTotalWords === expectedWords;
+
+    checks.configuration = {
+      passed: validConfiguration,
+      total_rounds: totalRounds,
+      words_per_round: wordsPerRound,
+      total_words: configuredTotalWords,
+      expected_words: expectedWords
+    };
+
+    if (!validConfiguration) {
+      issues.push(
+        "Stage configuration is invalid. Check total rounds, words per round and total words."
+      );
+    }
+
+    // 4. CHECK PARTICIPANTS, DRAW ORDER AND WORD GROUPS
+
+    const participants = await sql`
+      SELECT
+        s.id AS student_id,
+        s.full_name,
+        sp.status AS stage_status,
+        d.draw_order,
+        d.group_id,
+        g.group_number,
+        g.id AS valid_group_id,
+
+        (
+          SELECT COUNT(*)::int
+          FROM words w
+          WHERE w.group_id = g.id
+        ) AS word_count
+
+      FROM student_stage_progress sp
+
+      JOIN students s
+        ON s.id = sp.student_id
+
+      LEFT JOIN student_draws d
+        ON d.student_id = sp.student_id
+        AND d.competition_id = sp.competition_id
+        AND d.stage_number = sp.stage_number
+
+      LEFT JOIN word_groups g
+        ON g.id = d.group_id
+        AND g.competition_id = sp.competition_id
+        AND g.stage_number = sp.stage_number
+
+      WHERE sp.competition_id = ${competitionId}
+        AND sp.stage_number = ${stageNumber}
+        AND sp.status = 'active'
+
+      ORDER BY
+        d.draw_order ASC NULLS LAST,
+        s.full_name ASC
+    `;
+
+    checks.participants = {
+      passed: participants.length > 0,
+      count: participants.length
+    };
+
+    if (participants.length === 0) {
+      issues.push("No active participants are assigned to this stage.");
+    }
+
+    let missingDraw = 0;
+    let missingGroups = 0;
+    let insufficientWords = 0;
+    let invalidOrder = 0;
+
+    participants.forEach((student, index) => {
+
+      if (
+        student.draw_order === null ||
+        student.draw_order === undefined
+      ) {
+        missingDraw++;
+      } else if (Number(student.draw_order) !== index + 1) {
+        invalidOrder++;
+      }
+
+      if (
+        !student.group_id ||
+        !student.valid_group_id
+      ) {
+        missingGroups++;
+      }
+
+      if (
+        student.valid_group_id &&
+        Number(student.word_count) < expectedWords
+      ) {
+        insufficientWords++;
+      }
+
+    });
+
+    checks.draw_order = {
+      passed:
+        participants.length > 0 &&
+        missingDraw === 0 &&
+        invalidOrder === 0,
+      missing_positions: missingDraw,
+      inconsistent_positions: invalidOrder
+    };
+
+    checks.word_groups = {
+      passed:
+        participants.length > 0 &&
+        missingGroups === 0 &&
+        insufficientWords === 0,
+      missing_groups: missingGroups,
+      insufficient_word_groups: insufficientWords
+    };
+
+    if (missingDraw > 0) {
+      issues.push(
+        `${missingDraw} participant(s) have no draw position.`
+      );
+    }
+
+    if (invalidOrder > 0) {
+      issues.push(
+        "Draw positions are incomplete or inconsistent. Check the original draw order."
+      );
+    }
+
+    if (missingGroups > 0) {
+      issues.push(
+        `${missingGroups} participant(s) have missing or invalid word groups.`
+      );
+    }
+
+    if (insufficientWords > 0) {
+      issues.push(
+        `${insufficientWords} word group(s) do not contain enough words for this stage.`
+      );
+    }
+
+    // 5. CHECK COMPETITION JUDGES
+
+    const judges = await sql`
+      SELECT
+        u.id,
+        u.full_name,
+        u.username,
+        u.role
+      FROM competition_judges cj
+      JOIN users u
+        ON u.id = cj.judge_id
+      WHERE cj.competition_id = ${competitionId}
+        AND u.role = 'judge'
+      ORDER BY u.full_name ASC
+    `;
+
+    checks.judges = {
+      passed: judges.length > 0,
+      assigned_count: judges.length,
+      stage_activation_verifiable: false
+    };
+
+    if (judges.length === 0) {
+      issues.push(
+        "No valid judges are assigned to this competition."
+      );
+    }
+
+    // The current competition_judges table has no stage
+    // activation field. Do not pretend stage activation
+    // has been verified.
+
+    issues.push(
+      "Stage-specific judge activation cannot yet be verified by the current database structure."
+    );
+
+    // 6. CHECK EXISTING STAGE RECORDS
+    // READ ONLY. NEVER DELETE OLD DATA HERE.
+
+    const attempts = await sql`
+      SELECT COUNT(*)::int AS total
+      FROM word_attempts
+      WHERE competition_id = ${competitionId}
+        AND stage_number = ${stageNumber}
+    `;
+
+    const votes = await sql`
+      SELECT COUNT(*)::int AS total
+      FROM judge_votes
+      WHERE competition_id = ${competitionId}
+        AND stage_number = ${stageNumber}
+    `;
+
+    const sessions = await sql`
+      SELECT COUNT(*)::int AS total
+      FROM competition_vote_sessions
+      WHERE competition_id = ${competitionId}
+        AND stage_number = ${stageNumber}
+    `;
+
+    const existingRecords = {
+      word_attempts: Number(attempts[0]?.total || 0),
+      judge_votes: Number(votes[0]?.total || 0),
+      voting_sessions: Number(sessions[0]?.total || 0)
+    };
+
+    const hasOldRecords =
+      existingRecords.word_attempts > 0 ||
+      existingRecords.judge_votes > 0 ||
+      existingRecords.voting_sessions > 0;
+
+    checks.existing_records = {
+      passed: !hasOldRecords,
+      review_required: hasOldRecords,
+      records: existingRecords
+    };
+
+    if (hasOldRecords) {
+      issues.push(
+        "Existing records were found for this stage. Leader review is required before initiation. No records have been deleted."
+      );
+    }
+
+    // 7. FINAL READINESS RESULT
+
+    const ready =
+      checks.competition.passed &&
+      checks.stage.passed &&
+      checks.configuration.passed &&
+      checks.participants.passed &&
+      checks.draw_order.passed &&
+      checks.word_groups.passed &&
+      checks.judges.passed &&
+      checks.existing_records.passed;
+
+    return Response.json({
+
+      success: true,
+      ready,
+
+      competition,
+      stage,
+
+      checks,
+
+      participants,
+      judges,
+
+      issues,
+
+      inspected_at: new Date().toISOString()
+
+    });
+
+  } catch (error) {
+
+    console.error(
+      "READINESS INSPECTION ERROR:",
+      error
+    );
+
+    return Response.json({
+
+      success: false,
+      message: "Readiness inspection failed.",
+      error: error.message
+
+    }, { status: 500 });
+
+  }
+
+}
+
     // =====================================================
     // DEFAULT
     // =====================================================

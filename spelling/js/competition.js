@@ -41,6 +41,8 @@ let competitionRealtimeFallback = null;
 
 let finalizingResult = false;
 let finalizedWordKey = null;
+let votingRefreshBusy = false;
+let activeVotingSessionId = null;
 
 let competitionState = {
   competition: null,
@@ -299,6 +301,7 @@ async function initializeOperationalCompetition() {
 
     await restoreCompetitionState();
     await prepareCurrentParticipant();
+    await refreshVotingSession();
     startRealtimeSync();
 
     document.getElementById("readinessPanel").hidden = true;
@@ -673,193 +676,11 @@ async function submitVote() {
 // ==========================================
 
 async function finalizeResult() {
-
-  if (finalizingResult) return;
-
-  const student = competitionState.currentStudent;
-
-  if (!student) {
-    updateTeacherStatus("No participant selected");
-    return;
-  }
-
-  if (!competitionState.currentWord) {
-    updateTeacherStatus("No current word");
-    return;
-  }
-
-
-  // Prevent accidental duplicate finalization for this word.
-
-  const wordKey = [
-    competitionState.competition?.id,
-    competitionState.stage?.stage_number,
-    student.id,
-    competitionState.currentRound,
-    competitionState.currentWordIndex
-  ].join("-");
-
-
-  if (finalizedWordKey === wordKey) {
-    updateTeacherStatus(
-      "This word's result has already been finalized"
-    );
-    return;
-  }
-
-
-  if (competitionState.started) {
-    updateTeacherStatus(
-      "Stop the timer before finalizing the result"
-    );
-    return;
-  }
-
-
-  finalizingResult = true;
-
-  updateTeacherStatus("Finalizing result...");
-
-
-  try {
-
-    const result = await api({
-
-      action: "finalizeVotes",
-
-      competition_id:
-        competitionState.competition.id,
-
-      stage_number:
-        competitionState.stage.stage_number,
-
-      student_id:
-        student.id,
-
-      round_number:
-        competitionState.currentRound,
-
-      word:
-        competitionState.currentWord,
-
-      used_time:
-        competitionState.usedTime,
-
-      time_allowed:
-        calculateAllowedTime(
-          competitionState.currentWord
-        )
-
-    });
-
-
-    if (!result || result.success === false) {
-
-      updateTeacherStatus(
-        result?.message || "Could not finalize result"
-      );
-
-      return;
-    }
-
-
-    // MARK THIS WORD AS FINALIZED
-
-    finalizedWordKey = wordKey;
-
-
-    const score = Number(result.score || 0);
-
-
-    // UPDATE ROUND SCORE
-
-    const roundScoreElement =
-      document.getElementById("roundScore");
-
-    const currentRoundScore =
-      Number(roundScoreElement?.innerText || 0);
-
-    const newRoundScore =
-      currentRoundScore + score;
-
-    setText(
-      "roundScore",
-      newRoundScore.toFixed(2)
-    );
-
-
-    // UPDATE TOTAL SCORE
-
-    const totalScoreElement =
-      document.getElementById("totalScore");
-
-    const currentTotalScore =
-      Number(totalScoreElement?.innerText || 0);
-
-    const newTotalScore =
-      currentTotalScore + score;
-
-    setText(
-      "totalScore",
-      newTotalScore.toFixed(2)
-    );
-
-
-    updateLiveInformation();
-
-
-    // PLAY RESULT SOUND
-
-    if (result.final_status === "correct") {
-
-      if (
-        competitionState.usedTime <=
-        calculateAllowedTime(
-          competitionState.currentWord
-        ) / 2
-      ) {
-
-        playSound(sounds.applause, 5000);
-
-      } else {
-
-        playSound(sounds.correct);
-
-      }
-
-    } else {
-
-      playSound(sounds.wrong);
-
-    }
-
-
-    disableVotingButtons();
-
-
-    updateTeacherStatus(
-      `Result finalized: ${String(result.final_status || "unknown").toUpperCase()} — leader may advance`
-    );
-
-
-    await saveCompetitionState();
-
-
-    // IMPORTANT:
-    // Do not automatically call nextWord().
-    // The leader decides when to advance.
-
-  } catch (error) {
-
-    console.error("Finalizing result failed:", error);
-
-    updateTeacherStatus("Could not finalize result");
-
-  } finally {
-
-    finalizingResult = false;
-
-  }
+  updateTeacherStatus(
+    "Result confirmation is locked. The current legacy finalizeVotes API does not yet enforce closed voting, strict majority, tie resolution, duplicate protection, or Leader confirmation. No result was saved."
+  );
+  alert("Result confirmation is not available yet. The voting and result-confirmation backend must be secured before this action can be enabled.");
+  return;
 }
 
 
@@ -868,6 +689,9 @@ async function finalizeResult() {
 // ==========================================
 
 async function nextWord() {
+  updateTeacherStatus("Progression is locked until secure Leader result confirmation and round controls are implemented.");
+  return;
+
   if (!finalizedWordKey) {
     updateTeacherStatus("Confirm the current word result before progressing.");
     return;
@@ -1041,6 +865,10 @@ async function nextParticipant() {
 // ==========================================
 
 async function resetParticipant() {
+  updateTeacherStatus("Participant restart is locked until a reasoned, audited Leader override is implemented.");
+  alert("Participant restart is temporarily unavailable to protect competition records.");
+  return;
+
 
   if (
     !competitionState.competition ||
@@ -1113,6 +941,10 @@ async function resetParticipant() {
 // ==========================================
 
 async function resetCompetition() {
+  updateTeacherStatus("Competition reset is disabled to protect existing competition history.");
+  alert("Competition reset is disabled. Existing records and history will not be deleted from this panel.");
+  return;
+
 
   const confirmed = confirm(
     "Reset the entire competition and return to the first participant?"
@@ -1290,6 +1122,88 @@ async function restoreCompetitionState() {
 }
 
 
+
+// ==========================================
+// READ-ONLY JUDGE VOTING MONITOR
+// ==========================================
+
+async function refreshVotingSession() {
+  if (votingRefreshBusy || !competitionState.competition?.id) return;
+  votingRefreshBusy = true;
+
+  try {
+    const response = await api({
+      action: "getVotingSession",
+      competition_id: competitionState.competition.id
+    });
+
+    if (!response?.success) {
+      throw new Error(response?.error || "Could not retrieve voting-session status.");
+    }
+
+    const session = response.session || null;
+    const judges = Array.isArray(response.judges) ? response.judges : [];
+    activeVotingSessionId = session?.id ?? null;
+
+    const authorized = judges.filter(judge => judge.authorized === true);
+    const voted = authorized.filter(judge => judge.voted === true);
+    const pending = authorized.filter(judge => judge.voted !== true);
+    const unauthorized = judges.filter(judge => judge.authorized !== true);
+    const progress = authorized.length
+      ? Math.round((voted.length / authorized.length) * 100)
+      : 0;
+
+    setText("authorizedCount", `${authorized.length} / ${judges.length}`);
+    setText("votesReceivedCount", `${voted.length}`);
+    setText("pendingCount", `${pending.length}`);
+    setText("sessionResult", session ? (session.status || "open").toUpperCase() : "—");
+
+    const bar = document.getElementById("voteProgressBar");
+    if (bar) bar.style.width = `${progress}%`;
+
+    const status = document.getElementById("votingStatus");
+    const judgeArea = document.getElementById("judgeSessionDetails");
+
+    if (!session) {
+      if (status) status.textContent = "There is currently no open voting session for this competition.";
+      if (judgeArea) judgeArea.innerHTML = '<p class="section-note">Waiting for a voting session. This panel does not open sessions or authorize judges.</p>';
+      setText("sessionResult", "NO OPEN SESSION");
+      return;
+    }
+
+    if (status) {
+      status.textContent = `Voting is ${session.status}. Stage ${session.stage_number ?? "—"}, Round ${session.round_number ?? "—"}, Participant ID ${session.student_id}, Word: ${session.word || "—"}.`;
+    }
+
+    if (judgeArea) {
+      const rows = judges.map(judge => {
+        const state = judge.authorized !== true
+          ? "Not authorized"
+          : judge.voted === true
+            ? "Vote submitted"
+            : "Authorized — awaiting vote";
+        return `<li><span>Judge ${escapeReadinessText(judge.judge_id ?? "Unknown")}</span><strong>${escapeReadinessText(state)}</strong></li>`;
+      }).join("");
+
+      judgeArea.innerHTML = `
+        <div class="session-summary">
+          <span><strong>${voted.length}</strong> of <strong>${authorized.length}</strong> authorized judges have voted (${progress}%).</span>
+          <span>${unauthorized.length} judge(s) not yet authorized.</span>
+        </div>
+        ${judges.length
+          ? `<ul class="judge-session-list">${rows}</ul>`
+          : '<p class="section-note">No judges were attached to this voting session.</p>'}
+        <p class="section-note">Read-only monitoring: no authorization, voting, session closure, or result confirmation is performed here.</p>
+      `;
+    }
+  } catch (error) {
+    console.error("Voting session monitor failed:", error);
+    setText("votingStatus", error.message || "Voting-session status is temporarily unavailable.");
+  } finally {
+    votingRefreshBusy = false;
+  }
+}
+
 // ==========================================
 // REALTIME SYNCHRONIZATION
 // ==========================================
@@ -1388,7 +1302,10 @@ async function syncCompetitionState() {
     });
 
 
-    if (!res || !res.state) return;
+    if (!res || !res.state) {
+      await refreshVotingSession();
+      return;
+    }
 
 
     // Do not overwrite the leader's active local countdown.
@@ -1401,6 +1318,8 @@ async function syncCompetitionState() {
       updateTeacherTimer();
 
     }
+
+    await refreshVotingSession();
 
   } catch (error) {
 
@@ -1590,7 +1509,6 @@ function goHome() {
 
 
 function goLeaderboard() {
-
-  window.location = "leaderboard.html";
-
+  alert("Leaderboard access from the Leader Panel will be enabled after the competition-closure and visibility controls are connected.");
+  return;
 }

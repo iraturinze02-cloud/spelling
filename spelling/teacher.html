@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Leader Control Panel | Fila Marks</title>
+<title>Spelling Competition | Leader Panel</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,6 +34,7 @@
 * {
   box-sizing: border-box;
 }
+[hidden] { display: none !important; }
 
 body {
   margin: 0;
@@ -538,6 +539,39 @@ button:disabled {
   padding: 12px;
 }
 
+
+
+/* COMPETITION READINESS GATE */
+.readiness-panel {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin: 0 0 22px;
+}
+.readiness-panel h3 { margin: 0 0 8px; font-size: 18px; }
+.readiness-intro { color: var(--muted); font-size: 13px; line-height: 1.65; margin: 0 0 18px; }
+.readiness-banner { padding: 13px 15px; border-radius: 11px; background: #eff6ff; color: #1e40af; font-size: 13px; font-weight: 700; margin-bottom: 16px; }
+.readiness-banner.error { background: #fef2f2; color: #991b1b; }
+.readiness-banner.success { background: #ecfdf5; color: #166534; }
+.readiness-checks { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; margin: 14px 0 20px; }
+.readiness-check { border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-size: 12px; display: flex; align-items: flex-start; gap: 9px; }
+.readiness-check i { margin-top: 2px; }
+.readiness-check.pass i { color: #15803d; }
+.readiness-check.fail i { color: #dc2626; }
+.readiness-issues { margin: 0 0 18px; padding-left: 20px; color: #991b1b; font-size: 12px; line-height: 1.8; }
+.readiness-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 11px; margin: 14px 0 18px; }
+.readiness-table { width: 100%; border-collapse: collapse; min-width: 480px; }
+.readiness-table th, .readiness-table td { padding: 11px 13px; border-bottom: 1px solid var(--border); text-align: left; font-size: 12px; }
+.readiness-table th { background: #f8fafc; color: #475569; }
+.readiness-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+.readiness-btn { padding: 12px 16px; border-radius: 9px; background: var(--blue); color: white; font-size: 12px; font-weight: 800; }
+.readiness-btn.secondary { background: #334155; }
+.readiness-btn:disabled { opacity: .5; cursor: not-allowed; }
+.readiness-footnote { color: var(--muted); font-size: 11px; line-height: 1.6; margin-top: 14px; }
+@media(max-width:650px) { .readiness-checks { grid-template-columns: 1fr; } .readiness-panel { padding: 16px; } }
+
 @media(max-width: 900px) {
   .main-grid {
     grid-template-columns: 1fr;
@@ -612,7 +646,7 @@ button:disabled {
     </div>
 
     <div>
-      <h1>FILA MARKS</h1>
+      <h1>SPELLING COMPETITION</h1>
       <p>LEADER CONTROL PANEL</p>
     </div>
   </div>
@@ -653,9 +687,23 @@ button:disabled {
   </section>
 
 
+  <!-- READINESS GATE: operational controls remain hidden until checks pass -->
+  <section class="readiness-panel" id="readinessPanel" aria-live="polite">
+    <h3><i class="fa-solid fa-clipboard-check"></i> Competition Readiness Inspection</h3>
+    <p class="readiness-intro">Before a spelling session begins, this panel checks the selected competition, active stage, participant assignments, draw order, word groups, judges and existing stage records. No records are deleted automatically.</p>
+    <div class="readiness-banner" id="readinessBanner">Inspecting competition readiness...</div>
+    <div id="readinessSummary"></div>
+    <div id="readinessParticipantArea"></div>
+    <div class="readiness-actions">
+      <button class="readiness-btn secondary" id="recheckReadinessBtn" type="button" onclick="recheckCompetitionReadiness()"><i class="fa-solid fa-rotate"></i> Recheck readiness</button>
+      <button class="readiness-btn" id="confirmReadinessBtn" type="button" onclick="confirmReadinessAndInitiate()" disabled><i class="fa-solid fa-shield-check"></i> Confirm list and initiate</button>
+    </div>
+    <p class="readiness-footnote">The operational panel stays locked until every required check passes and the Leader confirms the participant list, competition name and actual stage. This screen does not delete or modify competition records.</p>
+  </section>
+
   <!-- COMPETITION OVERVIEW -->
 
-  <section class="stats-grid">
+  <section class="stats-grid" id="leaderStats" hidden>
 
     <div class="stat-card">
       <div class="stat-icon">
@@ -707,7 +755,7 @@ button:disabled {
   </section>
 
 
-  <section class="main-grid">
+  <section class="main-grid" id="leaderOperations" hidden>
 
 
     <!-- LEFT COLUMN -->
@@ -833,7 +881,7 @@ button:disabled {
 
           <div class="button-grid">
 
-            <button class="action-btn btn-blue" onclick="nextParticipant()">
+            <button class="action-btn btn-blue" disabled title="Participant progression is controlled by the confirmed word and round workflow." onclick="nextParticipant()">
               <i class="fa-solid fa-user-plus"></i>
               Next Participant
             </button>
@@ -930,7 +978,7 @@ button:disabled {
 
           <div class="button-grid">
 
-            <button class="action-btn btn-blue" onclick="nextWord()">
+            <button class="action-btn btn-blue" disabled title="Progression will be enabled after result confirmation is fully connected." onclick="nextWord()">
               <i class="fa-solid fa-forward"></i>
               Next Word
             </button>
@@ -1321,7 +1369,7 @@ button:disabled {
 
 
   <div class="footer-note">
-    Fila Marks System · The Leader controls competition progression.
+    Spelling Competition · The Leader controls competition progression.
     Judges vote independently. The Timekeeper operates the timer.
   </div>
 

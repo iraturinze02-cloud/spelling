@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timekeeper Panel | Spelling Competition</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      background: #f1f5f9;
+      color: #172033;
+    }
+
+    header {
+      background: #123b2b;
+      color: white;
+      padding: 22px 18px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 23px;
+      font-weight: 800;
+      letter-spacing: .5px;
+    }
+
+    header p {
+      margin: 7px 0 0;
+      font-size: 13px;
+      opacity: .8;
+    }
+
+    main {
+      width: min(700px, 94%);
+      margin: 28px auto;
+    }
+
+    .card {
+      background: white;
+      padding: 22px;
+      border-radius: 14px;
+      margin-bottom: 18px;
+      box-shadow: 0 3px 14px rgba(0,0,0,.05);
+    }
+
+    .label {
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .7px;
+    }
+
+    .value {
+      font-size: 19px;
+      font-weight: 800;
+      margin-top: 8px;
+      overflow-wrap: anywhere;
+    }
+
+    .competition-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .participant {
+      text-align: center;
+    }
+
+    .participant-name {
+      font-size: 27px;
+      font-weight: 800;
+      margin-top: 12px;
+    }
+
+    .word {
+      text-align: center;
+      font-size: clamp(32px, 9vw, 55px);
+      font-weight: 800;
+      letter-spacing: 3px;
+      margin: 25px 0;
+      overflow-wrap: anywhere;
+    }
+
+    .timer {
+      text-align: center;
+      font-size: clamp(75px, 18vw, 110px);
+      font-weight: 800;
+      color: #123b2b;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .timer.running {
+      color: #dc2626;
+    }
+
+    .timer-status {
+      text-align: center;
+      margin-top: 12px;
+      font-weight: 700;
+      color: #64748b;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 9px;
+      padding: 16px;
+      font-size: 15px;
+      font-weight: 800;
+      color: white;
+      cursor: not-allowed;
+      opacity: .45;
+    }
+
+    .start {
+      background: #15803d;
+    }
+
+    .stop {
+      background: #dc2626;
+    }
+
+    .notice {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #9a3412;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .connection {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #94a3b8;
+    }
+
+    .dot.online {
+      background: #16a34a;
+    }
+
+    .dot.offline {
+      background: #dc2626;
+    }
+
+    #errorMessage {
+      color: #dc2626;
+      font-size: 13px;
+      margin-top: 12px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 25px;
+      color: #64748b;
+      font-size: 12px;
+    }
+
+    @media(max-width: 480px) {
+      .competition-info {
+        grid-template-columns: 1fr;
+      }
+
+      .card {
+        padding: 17px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>SPELLING COMPETITION</h1>
+  <p>TIMEKEEPER PANEL</p>
+</header>
+
+<main>
+
+  <div class="card">
+    <div class="competition-info">
+      <div>
+        <div class="label">Competition</div>
+        <div class="value" id="competitionName">Loading...</div>
+      </div>
+
+      <div>
+        <div class="label">Stage</div>
+        <div class="value" id="stageName">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card participant">
+    <div class="label">Current Participant</div>
+    <div class="participant-name" id="participantName">
+      Waiting...
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="label" style="text-align:center">
+      Current Spelling Word
+    </div>
+
+    <div class="word" id="currentWord">
+      WAITING
+    </div>
+
+    <div class="timer" id="timer">
+      0
+    </div>
+
+    <div class="timer-status" id="timerStatus">
+      WAITING FOR LEADER
+    </div>
+
+    <div class="controls">
+      <button class="start" id="startButton" disabled>
+        START TIMER
+      </button>
+
+      <button class="stop" id="stopButton" disabled>
+        STOP TIMER
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="connection">
+      <span class="dot" id="connectionDot"></span>
+      <span id="connectionStatus">Connecting...</span>
+    </div>
+
+    <p id="lastUpdated">Not synchronized yet.</p>
+
+    <div id="errorMessage"></div>
+  </div>
+
+  <div class="notice">
+    <strong>Timer controls are not activated yet.</strong>
+    <br>
+    This panel is currently monitoring the competition. Secure
+    server-side timer controls must be installed before the
+    Timekeeper can start or stop a live spelling session.
+  </div>
+
+</main>
+
+<footer>
+  Spelling Competition Management System
+</footer>
+
+<script src="js/timekeeper.js"></script>
+
+</body>
+</html>

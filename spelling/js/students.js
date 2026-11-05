@@ -8,9 +8,15 @@ INITIAL LOAD
 =============================== */
 
 window.onload = async () => {
-  await loadCompetition();
-  await loadStages();
-  await loadStudents();
+
+    const competitionLoaded = await loadCompetition();
+
+    if (!competitionLoaded) return;
+
+    await loadStages();
+
+    await loadStudents();
+
 };
 
 /* ===============================
@@ -18,63 +24,110 @@ API HELPER
 =============================== */
 
 async function apiRequest(payload) {
-  const res = await fetch("/api", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
 
-  let data;
+    const token = localStorage.getItem("auth_token");
 
-  try {
-    data = await res.json();
-  } catch {
-    throw new Error(`Server returned an invalid response (${res.status}).`);
-  }
+    const res = await fetch("/api", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + (token || "")
+        },
+        body: JSON.stringify(payload)
+    });
 
-  if (!res.ok || data.success === false) {
-    throw new Error(
-      data.error || `Request failed (${res.status}).`
-    );
-  }
+    const text = await res.text();
 
-  return data;
+    let data;
+
+    try {
+        data = JSON.parse(text);
+    } catch {
+        throw new Error(`Invalid server response (${res.status}).`);
+    }
+
+    if (!res.ok || data.success === false) {
+        throw new Error(
+            data.error ||
+            data.message ||
+            `Request failed (${res.status}).`
+        );
+    }
+
+    return data;
 }
-
 /* ===============================
 LOAD ACTIVE COMPETITION
 =============================== */
 
 async function loadCompetition() {
-  try {
-    const data = await apiRequest({
-      action: "getActiveCompetition"
-    });
 
-    competition = data.competition || null;
+    try {
 
-    if (competition) {
-      localStorage.setItem(
-        "competition_id",
-        String(competition.id)
-      );
-    } else {
-      localStorage.removeItem("competition_id");
+        // GET SELECTED COMPETITION ID
+        const selectedId =
+            localStorage.getItem("competitionId") ||
+            localStorage.getItem("competition_id");
+
+        if (!selectedId) {
+
+            document.getElementById("competitionName").innerText =
+                "No Competition Selected";
+
+            console.error("No competition ID found in localStorage.");
+
+            return false;
+        }
+
+        // LOAD ALL COMPETITIONS
+        const data = await apiRequest({
+            action: "getCompetitions"
+        });
+
+        const competitions = data.competitions || [];
+
+        // FIND SELECTED COMPETITION
+        competition = competitions.find(
+            comp => Number(comp.id) === Number(selectedId)
+        ) || null;
+
+        if (!competition) {
+
+            document.getElementById("competitionName").innerText =
+                "Selected Competition Not Found";
+
+            console.error("Selected competition ID:", selectedId);
+
+            return false;
+        }
+
+        // KEEP BOTH STORAGE KEYS SYNCHRONIZED
+        localStorage.setItem(
+            "competitionId",
+            String(competition.id)
+        );
+
+        localStorage.setItem(
+            "competition_id",
+            String(competition.id)
+        );
+
+        document.getElementById("competitionName").innerText =
+            competition.competition_name;
+
+        console.log("Selected competition:", competition);
+
+        return true;
+
+    } catch (error) {
+
+        console.error("Competition error:", error);
+
+        alert("Could not load competition: " + error.message);
+
+        return false;
     }
-
-    document.getElementById("competitionName").innerText =
-      competition
-        ? competition.competition_name
-        : "No Active Competition";
-
-  } catch (error) {
-    console.error("Competition error:", error);
-    alert("Could not load the active competition: " + error.message);
-  }
 }
-
 /* ===============================
 LOAD STAGES
 =============================== */

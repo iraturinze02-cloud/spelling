@@ -119,300 +119,140 @@ async function loadSystem() {
 // LOAD STUDENTS
 // ========================================
 
-async function loadStudents(){
+async function loadStudents() {
 
-try{
+    try {
 
-const data = await apiRequest({
+        const data = await apiRequest({
+            action: "getStudentsWithGroups",
+            competition_id: ACTIVE_COMPETITION_ID,
+            stage_number: ACTIVE_STAGE_NUMBER
+        });
 
-    action: "getStudentsWithGroups",
+        const students = data.students || [];
 
-    competition_id: ACTIVE_COMPETITION_ID,
+        if (students.length === 0) {
 
-    stage_number: ACTIVE_STAGE_NUMBER
+            document.getElementById("studentList").innerHTML = `
+                <tr>
+                    <td colspan="4" class="empty">
+                        No students found
+                    </td>
+                </tr>
+            `;
 
-});
+            return;
+        }
 
-const data =
-await res.json();
+        let html = "";
 
-const students =
-data.students || [];
+        students.forEach(student => {
 
+            html += `
+                <tr>
+                    <td class="nameCell">
+                        ${student.full_name || ""}
+                    </td>
 
-// EMPTY
-if(students.length === 0){
+                    <td>
+                        ${student.gender || "-"}
+                    </td>
 
-document.getElementById(
-"studentList"
-).innerHTML = `
+                    <td>
+                        <input
+                            type="number"
+                            min="1"
+                            class="inlineInput"
+                            id="group-${student.id}"
+                            value="${student.group_id || ""}"
+                            placeholder="Group"
+                            onchange="saveDraw(${student.id})"
+                        >
+                    </td>
 
-<tr>
+                    <td>
+                        <input
+                            type="number"
+                            min="1"
+                            class="inlineInput"
+                            id="order-${student.id}"
+                            value="${student.draw_order || ""}"
+                            placeholder="Order"
+                            onchange="saveDraw(${student.id})"
+                        >
+                    </td>
+                </tr>
+            `;
 
-<td colspan="4"
-class="empty">
+        });
 
-No students found
+        document.getElementById("studentList").innerHTML = html;
 
-</td>
+    } catch (error) {
 
-</tr>
+        console.error("LOAD STUDENTS ERROR:", error);
 
-`;
+        document.getElementById("studentList").innerHTML = `
+            <tr>
+                <td colspan="4" class="empty">
+                    Failed to load students
+                </td>
+            </tr>
+        `;
 
-return;
-
+    }
 }
-
-
-// TABLE
-let html = "";
-
-students.forEach(student=>{
-
-html += `
-
-<tr>
-
-<td class="nameCell">
-
-${student.full_name || ""}
-
-</td>
-
-<td>
-
-${student.gender || "-"}
-
-</td>
-
-<td>
-
-<input
-type="number"
-
-min="1"
-
-class="inlineInput"
-
-id="group-${student.id}"
-
-value="${student.group_id || ""}"
-
-placeholder="Group"
-
-onchange="saveDraw(
-${student.id}
-)"
-
->
-
-</td>
-
-<td>
-
-<input
-type="number"
-
-min="1"
-
-class="inlineInput"
-
-id="order-${student.id}"
-
-value="${student.draw_order || ""}"
-
-placeholder="Order"
-
-onchange="saveDraw(
-${student.id}
-)"
-
->
-
-</td>
-
-</tr>
-
-`;
-
-});
-
-document.getElementById(
-"studentList"
-).innerHTML = html;
-
-}
-catch(error){
-
-console.log(error);
-
-document.getElementById(
-"studentList"
-).innerHTML = `
-
-<tr>
-
-<td colspan="4"
-class="empty">
-
-Failed to load students
-
-</td>
-
-</tr>
-
-`;
-
-}
-
-}
-
-
-
 // ========================================
 // SAVE DRAW
 // ========================================
 
-async function saveDraw(student_id){
+async function saveDraw(student_id) {
 
-try{
+    try {
 
-const group_id =
-document.getElementById(
-`group-${student_id}`
-).value;
+        const group_id = document.getElementById(
+            `group-${student_id}`
+        ).value;
 
-const draw_order =
-document.getElementById(
-`order-${student_id}`
-).value;
+        const draw_order = document.getElementById(
+            `order-${student_id}`
+        ).value;
 
+        if (!group_id || !draw_order) return;
 
-// VALIDATION
-if(!group_id || !draw_order){
+        if (
+            !Number.isInteger(Number(group_id)) ||
+            !Number.isInteger(Number(draw_order)) ||
+            Number(group_id) < 1 ||
+            Number(draw_order) < 1
+        ) {
+            showToast("Invalid values", true);
+            return;
+        }
 
-return;
+        const result = await apiRequest({
+            action: "assignDraw",
+            competition_id: ACTIVE_COMPETITION_ID,
+            stage_number: ACTIVE_STAGE_NUMBER,
+            student_id,
+            group_id: Number(group_id),
+            draw_order: Number(draw_order)
+        });
 
+        if (result.success) {
+            showToast("Saved successfully");
+        } else {
+            showToast(result.message || "Failed to save", true);
+        }
+
+    } catch (error) {
+
+        console.error("SAVE DRAW ERROR:", error);
+
+        showToast(error.message || "Error saving draw", true);
+
+    }
 }
-
-if(
-isNaN(group_id) ||
-isNaN(draw_order)
-){
-
-showToast(
-"Invalid values",
-true
-);
-
-return;
-
-}
-
-
-// SAVE
-const result = await apiRequest({
-
-    action: "assignDraw",
-
-    competition_id: ACTIVE_COMPETITION_ID,
-
-    stage_number: ACTIVE_STAGE_NUMBER,
-
-    student_id,
-
-    group_id: parseInt(group_id),
-
-    draw_order: parseInt(draw_order)
-
-});
-
-const result =
-await response.json();
-
-if(result.success){
-
-showToast(
-"Saved successfully"
-);
-
-}else{
-
-showToast(
-result.message ||
-"Failed to save",
-true
-);
-
-}
-
-}
-catch(error){
-
-console.log(error);
-
-showToast(
-"Error saving draw",
-true
-);
-
-}
-
-}
-
-
-
-// ========================================
-// TOAST
-// ========================================
-
-function showToast(
-message,
-error=false
-){
-
-const toast =
-document.createElement("div");
-
-toast.className = "toast";
-
-toast.style.background =
-error
-? "#dc2626"
-: "#16a34a";
-
-toast.innerText = message;
-
-document.body.appendChild(
-toast
-);
-
-setTimeout(()=>{
-
-toast.classList.add(
-"show"
-);
-
-},100);
-
-setTimeout(()=>{
-
-toast.classList.remove(
-"show"
-);
-
-setTimeout(()=>{
-
-toast.remove();
-
-},300);
-
-},1800);
-
-}
-
-
 
 // ========================================
 // INITIALIZE

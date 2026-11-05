@@ -74,6 +74,66 @@ background:#9ca3af;
 cursor:not-allowed;
 }
 
+  .judges-panel {
+  margin-top: 15px;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+}
+
+.judges-heading {
+  font-weight: bold;
+  color: #1e3a8a;
+  margin-bottom: 10px;
+}
+
+.judge-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  margin-bottom: 8px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+
+.judge-name {
+  font-weight: bold;
+}
+
+.judge-status {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.judge-active {
+  color: #15803d;
+}
+
+.judge-inactive {
+  color: #dc2626;
+}
+
+.judge-button {
+  margin: 0;
+  min-width: 100px;
+}
+
+.judge-message {
+  font-size: 14px;
+  color: #555;
+  padding: 8px 0;
+}
+
+@media(max-width:500px) {
+  .judge-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
 </style>
 
 </head>
@@ -130,64 +190,126 @@ Loading competition...
 
 <script>
 
+
 let competition = null;
 let stages = [];
 
-/* GET ACTIVE COMPETITION */
-async function loadCompetition() {
+/* =========================================
+   API HELPER
+========================================= */
 
-  const res = await fetch("/api", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "getActiveCompetition"
-    })
-  });
+async function api(data) {
+  const token = localStorage.getItem("auth_token");
 
-  const data = await res.json();
+  const headers = {
+    "Content-Type": "application/json"
+  };
 
-  competition = data.competition || null;
-
-  if (!competition) {
-    document.getElementById("competitionName").innerText =
-      "No Active Competition";
-    return;
+  if (token) {
+    headers.Authorization = "Bearer " + token;
   }
 
-  document.getElementById("competitionName").innerText =
-    competition.competition_name;
-
-  loadStages();
-}
-
-
-/* GET STAGES */
-async function loadStages() {
-
   const res = await fetch("/api", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "getStagesByCompetition",
-      competition_id: competition.id
-    })
+    headers,
+    body: JSON.stringify(data)
   });
 
-  const data = await res.json();
+  const result = await res.json();
 
-  stages = data.stages || [];
+  if (!res.ok || result.success === false) {
+    throw new Error(
+      result.error || result.message || "Request failed."
+    );
+  }
 
-  renderStages();
+  return result;
 }
 
-/* RENDER UI */
-function renderStages() {
+/* =========================================
+   LOAD ACTIVE COMPETITION
+========================================= */
 
+async function loadCompetition() {
+  try {
+    const data = await api({
+      action: "getActiveCompetition"
+    });
+
+    competition = data.competition || null;
+
+    if (!competition) {
+      document.getElementById("competitionName").innerText =
+        "No Active Competition";
+      return;
+    }
+
+    document.getElementById("competitionName").innerText =
+      competition.competition_name;
+
+    await loadStages();
+
+  } catch (error) {
+    console.error("Competition loading error:", error);
+
+    document.getElementById("competitionName").innerText =
+      error.message;
+  }
+}
+
+/* =========================================
+   LOAD STAGES
+========================================= */
+
+async function loadStages() {
+  try {
+    const data = await api({
+      action: "getStagesByCompetition",
+      competition_id: competition.id
+    });
+
+    stages = data.stages || [];
+
+    renderStages();
+
+    // Load the assigned judges and their activation
+    // status for every stage.
+    await Promise.all(
+      stages.map(stage => loadStageJudges(stage.id))
+    );
+
+  } catch (error) {
+    console.error("Stage loading error:", error);
+
+    document.getElementById("stagesContainer").innerHTML =
+      `<p class="judge-message">${escapeHTML(error.message)}</p>`;
+  }
+}
+
+/* =========================================
+   SAFE HTML TEXT
+========================================= */
+
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[char]);
+}
+
+/* =========================================
+   DISPLAY STAGES
+========================================= */
+
+function renderStages() {
   const container = document.getElementById("stagesContainer");
+
   container.innerHTML = "";
 
   stages.forEach(stage => {
-
     const isActive = stage.status === "active";
 
     const div = document.createElement("div");
@@ -195,62 +317,186 @@ function renderStages() {
 
     div.innerHTML = `
       <div class="stage-title">
-        Stage ${stage.stage_number} - ${stage.stage_name}
+        Stage ${escapeHTML(stage.stage_number)}
+        - ${escapeHTML(stage.stage_name)}
       </div>
 
       <div class="info">
-        Participants: ${stage.participant_count}<br>
-        Rounds: ${stage.total_rounds}<br>
-        Words per round: ${stage.words_per_round}<br>
-        Top qualifiers: ${stage.top_qualifiers}<br>
-        Judges: ${stage.judge_count}<br>
-        Status: <b>${stage.status}</b>
+        Participants: ${escapeHTML(stage.participant_count)}<br>
+        Rounds: ${escapeHTML(stage.total_rounds)}<br>
+        Words per round: ${escapeHTML(stage.words_per_round)}<br>
+        Top qualifiers: ${escapeHTML(stage.top_qualifiers)}<br>
+        Judges: ${escapeHTML(stage.judge_count)}<br>
+        Status: <b>${escapeHTML(stage.status)}</b>
       </div>
 
-      <button onclick="openStage(${stage.id})">
+      <button onclick="openStage(${Number(stage.id)})">
         OPEN STAGE
       </button>
 
-      <button 
-        onclick="activateStage(${stage.id})"
+      <button
+        onclick="activateStage(${Number(stage.id)})"
         style="
           background:${isActive ? '#16a34a' : '#dc2626'};
           margin-left:10px;
         "
       >
-        ${isActive ? 'ACTIVE' : 'ACTIVATE'}
+        ${isActive ? "ACTIVE" : "ACTIVATE STAGE"}
       </button>
+
+      <div class="judges-panel">
+        <div class="judges-heading">
+          STAGE JUDGE ACTIVATION
+        </div>
+
+        <div id="judges-${Number(stage.id)}"
+             class="judge-message">
+          Loading assigned judges...
+        </div>
+      </div>
     `;
 
     container.appendChild(div);
   });
 }
-async function activateStage(stageId) {
 
-  const res = await fetch("/api", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "activateStage",
-      stage_id: stageId,
-      competition_id: competition.id
-    })
-  });
+/* =========================================
+   LOAD JUDGES FOR A PARTICULAR STAGE
+========================================= */
 
-  const data = await res.json();
+async function loadStageJudges(stageId) {
+  const container = document.getElementById(
+    "judges-" + stageId
+  );
 
-  alert(data.message || "Stage updated");
+  if (!container) return;
 
-  // 🔥 GET stage number first from backend result or reload
-  await loadStages();
+  try {
+    const data = await api({
+      action: "getStageJudges",
+      stage_id: Number(stageId)
+    });
 
-  const stage = stages.find(s => s.id === stageId);
+    const judges = data.judges || [];
 
-  if (stage) {
-    await ensureStageReady(stage.stage_number);
+    if (judges.length === 0) {
+      container.innerHTML =
+        "No judges have been assigned to this competition.";
+      return;
+    }
+
+    container.innerHTML = judges.map(judge => {
+      const active = judge.is_active === true;
+
+      return `
+        <div class="judge-row">
+
+          <div>
+            <div class="judge-name">
+              ${escapeHTML(judge.full_name)}
+            </div>
+
+            <div class="judge-status ${
+              active ? "judge-active" : "judge-inactive"
+            }">
+              ${active ? "● ACTIVATED" : "● NOT ACTIVATED"}
+            </div>
+          </div>
+
+          <button
+            class="judge-button"
+            style="background:${active ? "#dc2626" : "#16a34a"}"
+            onclick="toggleStageJudge(
+              ${Number(stageId)},
+              ${Number(judge.judge_id)},
+              ${active}
+            )"
+          >
+            ${active ? "DEACTIVATE" : "ACTIVATE JUDGE"}
+          </button>
+
+        </div>
+      `;
+    }).join("");
+
+  } catch (error) {
+    console.error("Judge loading error:", error);
+
+    container.innerHTML =
+      `<span style="color:red">${escapeHTML(error.message)}</span>`;
   }
 }
-/* NAVIGATION */
+
+/* =========================================
+   ACTIVATE / DEACTIVATE INDIVIDUAL JUDGE
+========================================= */
+
+async function toggleStageJudge(stageId, judgeId, isActive) {
+  const action = isActive
+    ? "deactivateStageJudge"
+    : "activateStageJudge";
+
+  const confirmation = confirm(
+    isActive
+      ? "Are you sure you want to deactivate this judge for this stage?"
+      : "Are you sure you want to activate this judge for this stage?"
+  );
+
+  if (!confirmation) return;
+
+  try {
+    const data = await api({
+      action,
+      stage_id: Number(stageId),
+      judge_id: Number(judgeId)
+    });
+
+    alert(data.message || "Judge status updated successfully.");
+
+    // Refresh only this stage's judge list.
+    await loadStageJudges(stageId);
+
+  } catch (error) {
+    console.error("Judge activation error:", error);
+
+    alert(error.message);
+  }
+}
+
+/* =========================================
+   EXISTING STAGE ACTIVATION
+========================================= */
+
+async function activateStage(stageId) {
+  try {
+    const data = await api({
+      action: "activateStage",
+      stage_id: Number(stageId),
+      competition_id: competition.id
+    });
+
+    alert(data.message || "Stage updated.");
+
+    await loadStages();
+
+    const stage = stages.find(
+      s => Number(s.id) === Number(stageId)
+    );
+
+    if (stage) {
+      await ensureStageReady(stage.stage_number);
+    }
+
+  } catch (error) {
+    console.error("Stage activation error:", error);
+    alert(error.message);
+  }
+}
+
+/* =========================================
+   NAVIGATION
+========================================= */
+
 function goHome() {
   window.location = "teacher-home.html";
 }
@@ -259,37 +505,52 @@ function goBack() {
   window.location = "competitions.html";
 }
 
-/* OPEN STAGE */
+/* =========================================
+   OPEN STAGE
+========================================= */
+
 async function openStage(stageId) {
+  try {
+    const stage = stages.find(
+      s => Number(s.id) === Number(stageId)
+    );
 
-  await loadStages();
-
-  const stage = stages.find(s => s.id === stageId);
-
-  if (stage) {
-    await ensureStageReady(stage.stage_number);
-  }
-
-  window.location = "teacher.html?stage_id=" + stageId;
-}
-  async function ensureStageReady(stageNumber) {
-
-  const res = await fetch("/api", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "ensureStageReady",
-      competition_id: competition.id,
-      stage_number: stageNumber
-    })
-  });
-
-  const data = await res.json();
-
-  console.log("Ensure stage ready:", data);
+    if (!stage) {
+      alert("Stage not found.");
+      return;
     }
 
-/* INIT */
+    await ensureStageReady(stage.stage_number);
+
+    window.location =
+      "teacher.html?stage_id=" + stageId;
+
+  } catch (error) {
+    console.error("Open stage error:", error);
+    alert(error.message);
+  }
+}
+
+/* =========================================
+   ENSURE STAGE READY
+========================================= */
+
+async function ensureStageReady(stageNumber) {
+  const data = await api({
+    action: "ensureStageReady",
+    competition_id: competition.id,
+    stage_number: stageNumber
+  });
+
+  console.log("Ensure stage ready:", data);
+
+  return data;
+}
+
+/* =========================================
+   INITIALIZE
+========================================= */
+
 loadCompetition();
 
 </script>

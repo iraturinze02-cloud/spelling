@@ -808,7 +808,45 @@ if (!stageActivation.length) {
       return Response.json({ success: true });
     }
 
+// =====================================================
+// GET JUDGES ASSIGNED TO A COMPETITION
+// =====================================================
+if (action === "getCompetitionJudges") {
 
+  if (actorRole !== "teacher") {
+    return Response.json({
+      success: false,
+      error: "Only the Leader can view competition judge assignments."
+    }, { status: 403 });
+  }
+
+  const competitionId = Number(body.competition_id);
+
+  if (!Number.isInteger(competitionId) || competitionId <= 0) {
+    return Response.json({
+      success: false,
+      error: "A valid competition_id is required."
+    }, { status: 400 });
+  }
+
+  const judges = await sql`
+    SELECT
+      u.id,
+      u.full_name,
+      u.username
+    FROM competition_judges cj
+    JOIN users u
+      ON u.id = cj.judge_id
+    WHERE cj.competition_id = ${competitionId}
+      AND u.role = 'judge'
+    ORDER BY u.full_name ASC
+  `;
+
+  return Response.json({
+    success: true,
+    judges
+  });
+}
     
     // =====================================================
     // SAVE COMPETITION JUDGES

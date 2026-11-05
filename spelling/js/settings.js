@@ -307,39 +307,67 @@ SAVE STAGE RULES
 
 async function saveStageRules() {
   try {
+    if (!competition) {
+      alert("No active competition selected");
+      return;
+    }
 
-    const stageNumber = parseInt(
+    const stageNumber = Number(
       document.getElementById("stageSelect").value
     );
 
-    const rounds = document.getElementById("rounds").value;
-    const words = document.getElementById("words").value;
+    const rounds = Number(
+      document.getElementById("rounds").value
+    );
+
+    const words = Number(
+      document.getElementById("words").value
+    );
+
+    if (!stageNumber || !rounds || !words) {
+      alert("Please select a stage, rounds and words per round");
+      return;
+    }
+
+    const totalWords = rounds * words;
 
     const res = await fetch("/api", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({
         action: "updateStageSettings",
         competition_id: competition.id,
         stage_number: stageNumber,
         total_rounds: rounds,
         words_per_round: words,
-        total_words: rounds * words
+        total_words: totalWords
       })
     });
 
     const data = await res.json();
 
-    if (data.success) {
-      alert("Rules updated");
-      await loadStages();
+    if (!res.ok || !data.success) {
+      console.error("Stage rules error:", data);
+      alert(data.message || "Failed to update stage rules");
+      return;
     }
 
+    alert(
+      `Rules updated successfully.\n\n` +
+      `Rounds: ${rounds}\n` +
+      `Words per round: ${words}\n` +
+      `Total words required: ${totalWords}`
+    );
+
+    await loadStages();
+
   } catch (error) {
-    console.log(error);
+    console.error("Save stage rules error:", error);
+    alert("Unable to save stage rules. Check your connection.");
   }
 }
-
 /* ===============================
 HOME
 =============================== */

@@ -1,4 +1,26 @@
+async function apiRequest(data) {
 
+    const token = localStorage.getItem("auth_token");
+
+    const response = await fetch("/api", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + (token || "")
+        },
+        body: JSON.stringify(data)
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+        throw new Error(
+            result.message || `API error: ${response.status}`
+        );
+    }
+
+    return result;
+}
 
 // ========================================
 // GLOBALS
@@ -12,130 +34,85 @@ let ACTIVE_STAGE_NUMBER = null;
 // LOAD ACTIVE SYSTEM
 // ========================================
 
-async function loadSystem(){
+async function loadSystem() {
 
-try{
+    try {
 
-// ACTIVE COMPETITION
-const competitionRes =
-await fetch(
-"/api",
-{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-action:"getActiveCompetition"
-})
-}
-);
+        // ACTIVE COMPETITION
+        const competitionData = await apiRequest({
+            action: "getActiveCompetition"
+        });
 
-const competitionData =
-await competitionRes.json();
+        if (!competitionData.competition) {
 
-if(!competitionData.competition){
+            document.getElementById("studentList").innerHTML = `
+                <tr>
+                    <td colspan="4" class="empty">
+                        No Active Competition
+                    </td>
+                </tr>
+            `;
 
-document.getElementById(
-"studentList"
-).innerHTML = `
+            return;
+        }
 
-<tr>
-<td colspan="4" class="empty">
-No Active Competition
-</td>
-</tr>
-
-`;
-
-return;
-
-}
-
-ACTIVE_COMPETITION_ID =
-competitionData.competition.id;
+        ACTIVE_COMPETITION_ID =
+            competitionData.competition.id;
 
 
-// ACTIVE STAGE
-const stageRes =
-await fetch(
-"/api",
-{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-action:"getActiveStage",
-competition_id:
-ACTIVE_COMPETITION_ID
-})
-}
-);
+        // ACTIVE STAGE
+        const stageData = await apiRequest({
+            action: "getActiveStage",
+            competition_id: ACTIVE_COMPETITION_ID
+        });
 
-const stageData =
-await stageRes.json();
+        if (!stageData.stage) {
 
-if(!stageData.stage){
+            document.getElementById("studentList").innerHTML = `
+                <tr>
+                    <td colspan="4" class="empty">
+                        No Active Stage
+                    </td>
+                </tr>
+            `;
 
-document.getElementById(
-"studentList"
-).innerHTML = `
+            console.log("Active stage response:", stageData);
 
-<tr>
-<td colspan="4" class="empty">
-No Active Stage
-</td>
-</tr>
+            return;
+        }
 
-`;
+        ACTIVE_STAGE_NUMBER =
+            stageData.stage.stage_number;
 
-return;
+
+        // UPDATE TITLE
+        document.querySelector(".header h2").innerHTML = `
+            Participants Draw Assignment
+            <br>
+            <span style="
+                font-size:14px;
+                font-weight:normal;
+                opacity:.9;
+            ">
+                Stage ${ACTIVE_STAGE_NUMBER}
+            </span>
+        `;
+
+
+        // LOAD STUDENTS
+        await loadStudents();
+
+    }
+
+    catch(error) {
+
+        console.error("SYSTEM ERROR:", error);
+
+        showToast(error.message || "Failed to load system", true);
+
+    }
 
 }
-
-ACTIVE_STAGE_NUMBER =
-stageData.stage.stage_number;
-
-
-// UPDATE TITLE
-document.querySelector(
-".header h2"
-).innerHTML = `
-
-Participants Draw Assignment
-<br>
-
-<span style="
-font-size:14px;
-font-weight:normal;
-opacity:.9;
-">
-
-Stage ${ACTIVE_STAGE_NUMBER}
-
-</span>
-
-`;
-
-
-// LOAD STUDENTS
-loadStudents();
-
-}
-catch(error){
-
-console.log(error);
-
-showToast(
-"Failed to load system",
-true
-);
-
-}
-
-}
-
 
 
 // ========================================
@@ -146,27 +123,15 @@ async function loadStudents(){
 
 try{
 
-const res =
-await fetch(
-"/api",
-{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
+const data = await apiRequest({
 
-action:"getStudentsWithGroups",
+    action: "getStudentsWithGroups",
 
-competition_id:
-ACTIVE_COMPETITION_ID,
+    competition_id: ACTIVE_COMPETITION_ID,
 
-stage_number:
-ACTIVE_STAGE_NUMBER
+    stage_number: ACTIVE_STAGE_NUMBER
 
-})
-}
-);
+});
 
 const data =
 await res.json();
@@ -347,35 +312,21 @@ return;
 
 
 // SAVE
-const response =
-await fetch(
-"/api",
-{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
+const result = await apiRequest({
 
-action:"assignDraw",
+    action: "assignDraw",
 
-competition_id:
-ACTIVE_COMPETITION_ID,
+    competition_id: ACTIVE_COMPETITION_ID,
 
-stage_number:
-ACTIVE_STAGE_NUMBER,
+    stage_number: ACTIVE_STAGE_NUMBER,
 
-student_id,
+    student_id,
 
-group_id:
-parseInt(group_id),
+    group_id: parseInt(group_id),
 
-draw_order:
-parseInt(draw_order)
+    draw_order: parseInt(draw_order)
 
-})
-}
-);
+});
 
 const result =
 await response.json();

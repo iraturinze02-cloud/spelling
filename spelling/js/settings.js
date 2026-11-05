@@ -352,8 +352,9 @@ async function saveStageRules() {
     const res = await fetch("/api", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
-      },
+  "Content-Type": "application/json",
+  "Authorization": "Bearer " + (localStorage.getItem("auth_token") || "")
+},
       body: JSON.stringify({
         action: "updateStageSettings",
         competition_id: competition.id,

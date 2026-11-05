@@ -260,7 +260,55 @@ background:#16a34a;
 width:100%;
 
 }
+.assignment-section {
+    margin-top: 30px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    background: #f9fafb;
+}
 
+.assignment-section h2 {
+    color: #1e40af;
+    margin-bottom: 12px;
+}
+
+#competitionName {
+    margin-bottom: 15px;
+    font-weight: bold;
+    color: #374151;
+}
+
+.judge-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: white;
+    padding: 12px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+.judge-option input {
+    width: 18px;
+    height: 18px;
+}
+
+.judge-option label {
+    margin: 0;
+    cursor: pointer;
+    flex: 1;
+}
+
+#saveAssignments {
+    margin-top: 15px;
+}
+
+#saveAssignments:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
 </style>
 
 </head>
@@ -328,6 +376,33 @@ Loading...
 </tbody>
 
 </table>
+  <!-- =====================================
+     COMPETITION JUDGE ASSIGNMENT
+===================================== -->
+
+<div class="assignment-section">
+
+    <h2>Assign Judges to Competition</h2>
+
+    <p id="competitionName">
+        Loading active competition...
+    </p>
+
+    <div id="assignmentList">
+        Loading registered judges...
+    </div>
+
+    <button
+        type="button"
+        class="save"
+        id="saveAssignments"
+        onclick="saveJudgeAssignments()"
+        disabled
+    >
+        Save Judge Assignments
+    </button>
+
+</div>
 
 
 <button

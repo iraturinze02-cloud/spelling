@@ -22,7 +22,10 @@ async function loadCompetition() {
   try {
     const res = await fetch("/api", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+     headers: {
+  "Content-Type": "application/json",
+  "Authorization": "Bearer " + localStorage.getItem("auth_token")
+},
       body: JSON.stringify({
         action: "getActiveCompetition"
       })
@@ -61,7 +64,10 @@ async function saveCompetition() {
 
     const res = await fetch("/api", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+     headers: {
+  "Content-Type": "application/json",
+  "Authorization": "Bearer " + localStorage.getItem("auth_token")
+},
       body: JSON.stringify({
         action: "createCompetition",
         competition_name: name
@@ -91,7 +97,10 @@ async function loadJudges() {
   try {
     const res = await fetch("/api", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+  "Content-Type": "application/json",
+  "Authorization": "Bearer " + localStorage.getItem("auth_token")
+},
       body: JSON.stringify({
         action: "getJudges"
       })
@@ -134,7 +143,10 @@ async function saveJudges() {
 
     const res = await fetch("/api", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+  "Content-Type": "application/json",
+  "Authorization": "Bearer " + localStorage.getItem("auth_token")
+},
       body: JSON.stringify({
         action: "saveCompetitionJudges",
         competition_id: competition.id,
@@ -186,7 +198,10 @@ async function saveStages() {
 
     const res = await fetch("/api", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+headers: {
+  "Content-Type": "application/json",
+  "Authorization": "Bearer " + localStorage.getItem("auth_token")
+},
       body: JSON.stringify({
         action: "saveStages",
         stages: stageData
@@ -217,7 +232,10 @@ async function loadStages() {
 
     const res = await fetch("/api", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+headers: {
+  "Content-Type": "application/json",
+  "Authorization": "Bearer " + localStorage.getItem("auth_token")
+},
       body: JSON.stringify({
         action: "getStagesByCompetition",
         competition_id: competition.id

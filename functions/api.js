@@ -189,6 +189,260 @@ if (!session) {
 
   }
 }
+    
+/* =====================================================
+   STAGE JUDGE ACTIVATION
+   TEACHER ONLY
+===================================================== */
+
+// LIST ASSIGNED JUDGES AND ACTIVATION STATUS
+if (action === "getStageJudges") {
+
+  if (actorRole !== "teacher") {
+    return Response.json({
+      success: false,
+      error: "Only the Leader can view stage judge assignments."
+    }, { status: 403 });
+  }
+
+  const stageId = Number(body.stage_id);
+
+  if (!Number.isInteger(stageId) || stageId <= 0) {
+    return Response.json({
+      success: false,
+      error: "A valid stage_id is required."
+    }, { status: 400 });
+  }
+
+  const stages = await sql`
+    SELECT id, competition_id, stage_number, stage_name
+    FROM competition_stages
+    WHERE id = ${stageId}
+    LIMIT 1
+  `;
+
+  if (!stages.length) {
+    return Response.json({
+      success: false,
+      error: "Stage not found."
+    }, { status: 404 });
+  }
+
+  const stage = stages[0];
+
+  const judges = await sql`
+    SELECT
+      u.id AS judge_id,
+      u.full_name,
+      u.username,
+      COALESCE(csj.is_active, FALSE) AS is_active,
+      csj.activated_at
+    FROM competition_judges cj
+    JOIN users u
+      ON u.id = cj.judge_id
+    LEFT JOIN competition_stage_judges csj
+      ON csj.stage_id = ${stageId}
+      AND csj.judge_id = u.id
+    WHERE cj.competition_id = ${stage.competition_id}
+      AND u.role = 'judge'
+    ORDER BY u.full_name ASC
+  `;
+
+  const activeCount = judges.filter(
+    judge => judge.is_active === true
+  ).length;
+
+  return Response.json({
+    success: true,
+    stage,
+    judges,
+    assigned_count: judges.length,
+    activated_count: activeCount
+  });
+}
+
+
+// ACTIVATE A JUDGE FOR A STAGE
+if (action === "activateStageJudge") {
+
+  if (actorRole !== "teacher") {
+    return Response.json({
+      success: false,
+      error: "Only the Leader can activate judges."
+    }, { status: 403 });
+  }
+
+  const stageId = Number(body.stage_id);
+  const judgeId = Number(body.judge_id);
+
+  if (
+    !Number.isInteger(stageId) || stageId <= 0 ||
+    !Number.isInteger(judgeId) || judgeId <= 0
+  ) {
+    return Response.json({
+      success: false,
+      error: "Valid stage_id and judge_id are required."
+    }, { status: 400 });
+  }
+
+  const stages = await sql`
+    SELECT id, competition_id, stage_number
+    FROM competition_stages
+    WHERE id = ${stageId}
+    LIMIT 1
+  `;
+
+  if (!stages.length) {
+    return Response.json({
+      success: false,
+      error: "Stage not found."
+    }, { status: 404 });
+  }
+
+  const stage = stages[0];
+
+  const assignment = await sql`
+    SELECT cj.judge_id
+    FROM competition_judges cj
+    JOIN users u
+      ON u.id = cj.judge_id
+    WHERE cj.competition_id = ${stage.competition_id}
+      AND cj.judge_id = ${judgeId}
+      AND u.role = 'judge'
+    LIMIT 1
+  `;
+
+  if (!assignment.length) {
+    return Response.json({
+      success: false,
+      error: "This judge is not assigned to the competition."
+    }, { status: 403 });
+  }
+
+  await sql`
+    INSERT INTO competition_stage_judges (
+      stage_id,
+      judge_id,
+      is_active,
+      activated_at
+    )
+    VALUES (
+      ${stageId},
+      ${judgeId},
+      TRUE,
+      NOW()
+    )
+    ON CONFLICT (stage_id, judge_id)
+    DO UPDATE SET
+      is_active = TRUE,
+      activated_at = NOW()
+  `;
+
+  await broadcastCompetition(
+    context,
+    stage.competition_id,
+    {
+      action: "stageJudgeActivated",
+      stage_id: stageId,
+      judge_id: judgeId
+    }
+  );
+
+  return Response.json({
+    success: true,
+    message: "Judge activated for this stage."
+  });
+}
+
+
+// DEACTIVATE A JUDGE FOR A STAGE
+if (action === "deactivateStageJudge") {
+
+  if (actorRole !== "teacher") {
+    return Response.json({
+      success: false,
+      error: "Only the Leader can deactivate judges."
+    }, { status: 403 });
+  }
+
+  const stageId = Number(body.stage_id);
+  const judgeId = Number(body.judge_id);
+
+  if (
+    !Number.isInteger(stageId) || stageId <= 0 ||
+    !Number.isInteger(judgeId) || judgeId <= 0
+  ) {
+    return Response.json({
+      success: false,
+      error: "Valid stage_id and judge_id are required."
+    }, { status: 400 });
+  }
+
+  const stages = await sql`
+    SELECT id, competition_id, stage_number
+    FROM competition_stages
+    WHERE id = ${stageId}
+    LIMIT 1
+  `;
+
+  if (!stages.length) {
+    return Response.json({
+      success: false,
+      error: "Stage not found."
+    }, { status: 404 });
+  }
+
+  const stage = stages[0];
+
+  // Do not deactivate a judge while voting is open
+  // for this stage.
+  const openSession = await sql`
+    SELECT id
+    FROM competition_vote_sessions
+    WHERE competition_id = ${stage.competition_id}
+      AND stage_number = ${stage.stage_number}
+      AND status = 'open'
+    LIMIT 1
+  `;
+
+  if (openSession.length) {
+    return Response.json({
+      success: false,
+      error: "Close the current voting session before deactivating a judge."
+    }, { status: 409 });
+  }
+
+  const updated = await sql`
+    UPDATE competition_stage_judges
+    SET is_active = FALSE
+    WHERE stage_id = ${stageId}
+      AND judge_id = ${judgeId}
+    RETURNING id
+  `;
+
+  if (!updated.length) {
+    return Response.json({
+      success: false,
+      error: "This judge has no activation record for the selected stage."
+    }, { status: 404 });
+  }
+
+  await broadcastCompetition(
+    context,
+    stage.competition_id,
+    {
+      action: "stageJudgeDeactivated",
+      stage_id: stageId,
+      judge_id: judgeId
+    }
+  );
+
+  return Response.json({
+    success: true,
+    message: "Judge deactivated for this stage."
+  });
+}
+
 // ================================================
 // GET CURRENT VOTING SESSION
 // ================================================
@@ -257,13 +511,13 @@ if (action === "authorizeJudge") {
     }, { status: 400 });
   }
 
-  const votingSessions = await sql`
-    SELECT id, competition_id
-    FROM competition_vote_sessions
-    WHERE id = ${sessionId}
-      AND status = 'open'
-    LIMIT 1
-  `;
+const votingSessions = await sql`
+  SELECT id, competition_id, stage_number
+  FROM competition_vote_sessions
+  WHERE id = ${sessionId}
+    AND status = 'open'
+  LIMIT 1
+`;
 
   if (!votingSessions.length) {
     return Response.json({
@@ -288,6 +542,24 @@ if (action === "authorizeJudge") {
       error: "This judge is not assigned to the competition."
     }, { status: 403 });
   }
+  const stageActivation = await sql`
+  SELECT csj.id
+  FROM competition_stage_judges csj
+  JOIN competition_stages cs
+    ON cs.id = csj.stage_id
+  WHERE cs.competition_id = ${votingSessions[0].competition_id}
+    AND cs.stage_number = ${votingSessions[0].stage_number}
+    AND csj.judge_id = ${judgeId}
+    AND csj.is_active = TRUE
+  LIMIT 1
+`;
+
+if (!stageActivation.length) {
+  return Response.json({
+    success: false,
+    error: "This judge is not activated for the current stage."
+  }, { status: 403 });
+}
 
   const updated = await sql`
     UPDATE competition_vote_session_judges
@@ -595,7 +867,7 @@ if (action === "authorizeJudge") {
           SELECT id
           FROM users
           WHERE id = ANY(${judgeIds})
-            AND role IN ('judge', 'teacher')
+            AND role = 'judge'
         `;
 
         if (validJudges.length !== judgeIds.length) {
@@ -2605,6 +2877,25 @@ if (action === "saveJudgeVote") {
 
   const votingSession = votingSessions[0];
 
+  const stageActivation = await sql`
+  SELECT csj.id
+  FROM competition_stage_judges csj
+  JOIN competition_stages cs
+    ON cs.id = csj.stage_id
+  WHERE cs.competition_id = ${votingSession.competition_id}
+    AND cs.stage_number = ${votingSession.stage_number}
+    AND csj.judge_id = ${judgeId}
+    AND csj.is_active = TRUE
+  LIMIT 1
+`;
+
+if (!stageActivation.length) {
+  return Response.json({
+    success: false,
+    error: "You are not activated for this competition stage."
+  }, { status: 403 });
+}
+
   const judgeRows = await sql`
     SELECT *
     FROM competition_vote_session_judges
@@ -2868,12 +3159,20 @@ if (
   }
 
   const assignedJudges = await sql`
-    SELECT cj.judge_id
-    FROM competition_judges cj
-    JOIN users u ON u.id = cj.judge_id
-    WHERE cj.competition_id = ${competitionId}
-      AND u.role = 'judge'
-  `;
+  SELECT DISTINCT cj.judge_id
+  FROM competition_judges cj
+  JOIN users u
+    ON u.id = cj.judge_id
+  JOIN competition_stage_judges csj
+    ON csj.judge_id = cj.judge_id
+  JOIN competition_stages cs
+    ON cs.id = csj.stage_id
+  WHERE cj.competition_id = ${competitionId}
+    AND cs.competition_id = ${competitionId}
+    AND cs.stage_number = ${stage.stage_number}
+    AND csj.is_active = TRUE
+    AND u.role = 'judge'
+`;
 
   if (!assignedJudges.length) {
     return Response.json({
@@ -3856,39 +4155,64 @@ if (action === "inspectCompetitionReadiness") {
 
     // 5. CHECK COMPETITION JUDGES
 
+   
+    // 5. CHECK ASSIGNED AND ACTIVATED STAGE JUDGES
+
     const judges = await sql`
       SELECT
         u.id,
         u.full_name,
         u.username,
-        u.role
+        u.role,
+        COALESCE(csj.is_active, FALSE) AS is_active,
+        csj.activated_at
       FROM competition_judges cj
       JOIN users u
         ON u.id = cj.judge_id
+      LEFT JOIN competition_stage_judges csj
+        ON csj.stage_id = ${stage.id}
+        AND csj.judge_id = u.id
       WHERE cj.competition_id = ${competitionId}
         AND u.role = 'judge'
       ORDER BY u.full_name ASC
     `;
 
+    const assignedCount = judges.length;
+
+    const activatedJudges = judges.filter(
+      judge => judge.is_active === true
+    );
+
+    const activatedCount = activatedJudges.length;
+
+    const requiredJudgeCount =
+      Math.max(1, Number(stage.judge_count) || 1);
+
+    const activationPassed =
+      assignedCount > 0 &&
+      activatedCount >= requiredJudgeCount;
+
     checks.judges = {
-      passed: judges.length > 0,
-      assigned_count: judges.length,
-      stage_activation_verifiable: false
+      passed: activationPassed,
+      assigned_count: assignedCount,
+      activated_count: activatedCount,
+      required_count: requiredJudgeCount,
+      stage_activation_verifiable: true
     };
 
-    if (judges.length === 0) {
+    if (assignedCount === 0) {
       issues.push(
         "No valid judges are assigned to this competition."
       );
+    } else if (activatedCount === 0) {
+      issues.push(
+        "No judges are activated for this stage."
+      );
+    } else if (activatedCount < requiredJudgeCount) {
+      issues.push(
+        `Only ${activatedCount} judge(s) are activated. ${requiredJudgeCount} judge(s) are required for this stage.`
+      );
     }
-
-    // The current competition_judges table has no stage
-    // activation field. Do not pretend stage activation
-    // has been verified.
-
-    issues.push(
-      "Stage-specific judge activation cannot yet be verified by the current database structure."
-    );
 
     // 6. CHECK EXISTING STAGE RECORDS
     // READ ONLY. NEVER DELETE OLD DATA HERE.

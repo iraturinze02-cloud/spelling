@@ -21,8 +21,9 @@ await fetch(
 "/api",
 {
 method:"POST",
-headers:{
-"Content-Type":"application/json"
+headers: {
+  "Content-Type": "application/json",
+  "Authorization": "Bearer " + (localStorage.getItem("auth_token") || "")
 },
 body:JSON.stringify({
 action:"getActiveCompetition"
@@ -57,8 +58,9 @@ await fetch(
 "/api",
 {
 method:"POST",
-headers:{
-"Content-Type":"application/json"
+headers: {
+  "Content-Type": "application/json",
+  "Authorization": "Bearer " + (localStorage.getItem("auth_token") || "")
 },
 body:JSON.stringify({
 action:"getActiveStage",
@@ -270,8 +272,9 @@ await fetch(
 "/api",
 {
 method:"POST",
-headers:{
-"Content-Type":"application/json"
+headers: {
+  "Content-Type": "application/json",
+  "Authorization": "Bearer " + (localStorage.getItem("auth_token") || "")
 },
 body:JSON.stringify({
 
@@ -345,8 +348,9 @@ await fetch(
 "/api",
 {
 method:"POST",
-headers:{
-"Content-Type":"application/json"
+headers: {
+  "Content-Type": "application/json",
+  "Authorization": "Bearer " + (localStorage.getItem("auth_token") || "")
 },
 body:JSON.stringify({
 

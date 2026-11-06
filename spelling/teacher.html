@@ -662,6 +662,81 @@ button:disabled {
     padding: 10px 7px;
   }
 }
+
+/* =========================================================
+   LEADER PANEL PAGINATION
+   Sticky navigation; each tab displays only its own section.
+   Existing element IDs and competition.js hooks are preserved.
+   ========================================================= */
+.leader-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  margin: 0 0 18px;
+  background: rgba(244,247,251,.96);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(15,23,42,.08);
+  overflow-x: auto;
+}
+.leader-tab {
+  flex: 1 0 auto;
+  min-width: 145px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 15px;
+  border-radius: 10px;
+  background: #fff;
+  color: #475569;
+  border: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.leader-tab:hover { background: #eff6ff; color: var(--blue); }
+.leader-tab.active {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+  box-shadow: 0 3px 10px rgba(37,99,235,.2);
+}
+.leader-tab:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+/* Live Session: overview, live floor and voting-session monitor */
+main.page.leader-view-live #leaderStats:not([hidden]) { display: grid !important; }
+main.page.leader-view-live #leaderOperations > div > .panel:nth-child(2) { display: none !important; }
+main.page.leader-view-live #leaderOperations > aside > .panel:not(:nth-child(1)) { display: none !important; }
+
+/* Competition Controls: only the Leader Controls panel */
+main.page.leader-view-controls #leaderStats { display: none !important; }
+main.page.leader-view-controls #leaderOperations > div > .panel:nth-child(1) { display: none !important; }
+main.page.leader-view-controls #leaderOperations > aside { display: none !important; }
+
+/* Judging & Results: voting monitor and result review */
+main.page.leader-view-judging #leaderStats { display: none !important; }
+main.page.leader-view-judging #leaderOperations > div { display: none !important; }
+main.page.leader-view-judging #leaderOperations > aside > .panel:not(:nth-child(1)):not(:nth-child(2)) { display: none !important; }
+
+/* Operations & Responsibilities: leader duties and timekeeper */
+main.page.leader-view-operations #leaderStats { display: none !important; }
+main.page.leader-view-operations #leaderOperations > div { display: none !important; }
+main.page.leader-view-operations #leaderOperations > aside > .panel:nth-child(1),
+main.page.leader-view-operations #leaderOperations > aside > .panel:nth-child(2) { display: none !important; }
+
+@media (max-width: 650px) {
+  .leader-tabs { gap: 6px; padding: 8px; }
+  .leader-tab { min-width: 125px; padding: 10px 12px; font-size: 11px; }
+}
+
 </style>
 </head>
 
@@ -715,6 +790,23 @@ button:disabled {
 
   </section>
 
+
+
+  <!-- FIXED-NAVIGATION PAGINATION FOR LEADER PANEL -->
+  <nav class="leader-tabs" id="leaderPanelTabs" aria-label="Leader panel sections">
+    <button class="leader-tab active" type="button" data-leader-view="live" aria-selected="true">
+      <i class="fa-solid fa-display"></i> Live Session
+    </button>
+    <button class="leader-tab" type="button" data-leader-view="controls" aria-selected="false">
+      <i class="fa-solid fa-shield-halved"></i> Competition Controls
+    </button>
+    <button class="leader-tab" type="button" data-leader-view="judging" aria-selected="false">
+      <i class="fa-solid fa-gavel"></i> Judging &amp; Results
+    </button>
+    <button class="leader-tab" type="button" data-leader-view="operations" aria-selected="false">
+      <i class="fa-solid fa-list-check"></i> Operations &amp; Responsibilities
+    </button>
+  </nav>
 
   <!-- READINESS GATE: operational controls remain hidden until checks pass -->
   <section class="readiness-panel" id="readinessPanel" aria-live="polite">
@@ -1420,6 +1512,37 @@ function toggleMusicPanel() {
     panel.style.display === "block" ? "none" : "block";
 
 }
+
+
+/* LEADER PANEL TAB NAVIGATION
+   This only changes which existing interface sections are visible.
+   It does not change readiness checks or authorize competition actions. */
+(function initializeLeaderPanelTabs() {
+  const page = document.querySelector("main.page");
+  const tabs = document.querySelectorAll("[data-leader-view]");
+  if (!page || !tabs.length) return;
+
+  const views = ["live", "controls", "judging", "operations"];
+
+  function showLeaderView(view) {
+    if (!views.includes(view)) view = "live";
+    views.forEach(name => page.classList.remove("leader-view-" + name));
+    page.classList.add("leader-view-" + view);
+
+    tabs.forEach(tab => {
+      const selected = tab.dataset.leaderView === view;
+      tab.classList.toggle("active", selected);
+      tab.setAttribute("aria-selected", selected ? "true" : "false");
+      tab.setAttribute("tabindex", selected ? "0" : "-1");
+    });
+  }
+
+  tabs.forEach(tab => {
+    tab.addEventListener("click", () => showLeaderView(tab.dataset.leaderView));
+  });
+
+  showLeaderView("live");
+})();
 
 </script>
 
